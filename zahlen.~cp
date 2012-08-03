@@ -1,0 +1,14 @@
+#include<iostream>
+using namespace std;
+
+int main()
+{
+    int zahl1;
+    int zahl2;
+    cout<<"bitte eine zahl eingeben:\n";
+    cin>>zahl1;
+    cout<<"bitte eine zweite zahl eingeben:\n";
+    cin>>zahl2;
+    cout<<"zweite zahl: "<<zahl2<<"\n";
+    cout<<"erste zahl: "<<zahl1<<"\n";
+}
