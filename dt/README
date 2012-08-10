@@ -1,9 +1,0 @@
-DistField - distance field-based skeletonization. 
-            run >make                  to build the program
-            run >run.sh <testObject>   to get the skeleton
-	    Important information in the DistField/README file !!
-
-Thinnig - skeletonization by thinning
-	    run >make                  to build the program
-            run >run.sh <testObject>   to get the skeleton       
-	    Important information in the Thinning/README file !!         

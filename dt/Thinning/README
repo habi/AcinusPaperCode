@@ -1,2 +1,0 @@
-You have to copy (or link) the test object files (*.vol) into the current directory and run the program. 
-It will not work if the first argument contains a relative path that has ".." in it. !!

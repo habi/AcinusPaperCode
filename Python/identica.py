@@ -1,34 +1,61 @@
-#!/usr/bin/python
-# Filename: identica.py
-# loads defined notes from identi.ca and saves then to "timeline.txt" for further perusal
+# Loads notices from identi.ca via the API, saves the dates of the notices and plots them
 
-import urllib
-import string
+import urllib2
+from xml.dom.minidom import parseString # from http://is.gd/IQUOew
+import datetime
+from pylab import *
 
-for counter in range(1,4000000,1000) : 
-	url = "http://identi.ca/notice/" + str(counter)
-	print "loading " + str(url)
-	html = urllib.urlopen(url)
-	while 1:
-		htmlline = html.readline()
-		if htmlline == "":
-   			break
-		if (htmlline.find("<title>") > -1) :
-			htmlline = htmlline.replace("<title>"," ")
-			htmlline = htmlline.replace("</title>"," ")
-			htmlline = htmlline.replace("UTC - Identi.ca"," ")
-			htmlline = htmlline.replace("'s status on ","")
-			htmlline = htmlline.replace("Monday,",",")
-			htmlline = htmlline.replace("Tuesday,",",")
-			htmlline = htmlline.replace("Wednesday,",",")
-			htmlline = htmlline.replace("Thursday,",",")
-			htmlline = htmlline.replace("Friday,",",")
-			htmlline = htmlline.replace("Saturday,",",")
-			htmlline = htmlline.replace("Sunday,",",")
-			htmlline = htmlline.replace("-08 ","-08, ")
-			htmlline = htmlline.replace("-09 ","-09, ")
-			htmlline = htmlline.strip(" ")
-			print "saving title of " + str(url) + " to timeline.csv"
-			timeline = open('timeline.csv', 'a')
-			timeline.write(str(counter) + ", " + htmlline)
-timeline.close()
+howmany = 50
+
+# Load freshest notice ID
+try:
+	file = urllib2.urlopen('http://identi.ca/api/statuses/public_timeline.xml')
+	data = file.read()
+	file.close()
+	dom = parseString(data)
+	Tag = dom.getElementsByTagName('id')[0].toxml()
+	ID=int(Tag.replace('<id>','').replace('</id>',''))
+except:
+	print 'Bonkers, I cannot load the public timeline. Giving up!'
+	exit()
+
+# Load 'howmany' notices up to the freshest one and plot their date
+print 'I will load',howmany,'notices from the first to ID',ID
+print '---'
+plt.figure()
+counter = 1
+for Notice in range(1,ID,int(ID/howmany)):
+	try:
+		file = urllib2.urlopen('http://identi.ca/api/statuses/show/'+str(Notice)+'.xml')
+		data = file.read()
+		file.close()
+		dom = parseString(data)
+		Tag = dom.getElementsByTagName('created_at')[0].toxml()
+		#strip off the tag (<tag>data</tag>  --->   data):
+		Date=str(Tag.replace('<created_at>','').replace('</created_at>',''))
+		Date = str(Date[:-11])+str(Date[-5:])
+		Date = datetime.datetime.strptime(Date,'%a %b %d %H:%M:%S %Y')
+		print '[' + str(counter) + '/' + str(howmany) + '] ID',Notice,'was posted on',Date
+		plt.plot_date(Date,Notice)
+		plt.title('Identica Notice Number vs. Date')
+	except:
+		# Try the next one if this one doesnt exist
+		try:
+			Notice += 1
+			file = urllib2.urlopen('http://identi.ca/api/statuses/show/'+str(Notice)+'.xml')
+			data = file.read()
+			file.close()
+			dom = parseString(data)
+			Tag = dom.getElementsByTagName('created_at')[0].toxml()
+			#strip off the tag (<tag>data</tag>  --->   data):
+			Date=str(Tag.replace('<created_at>','').replace('</created_at>',''))
+			Date = str(Date[:-11])+str(Date[-5:])
+			Date = datetime.datetime.strptime(Date,'%a %b %d %H:%M:%S %Y')
+			print '[' + str(counter) + '/' + str(howmany) + '] ID',Notice,'was posted on',Date
+			plt.plot_date(Date,Notice)
+			plt.title('Identica Notice Number vs. Date')
+		except:
+			print '[' + str(counter) + '/' + str(howmany) + '] ID',ID,'does not exist, sorry!'
+	counter += 1
+
+plt.show()

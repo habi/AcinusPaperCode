@@ -1,7 +1,0 @@
-from pylab import *
-
-Drive = "R:\SLS""
-
-Rat = [B,D,E]
-
-print Drive
