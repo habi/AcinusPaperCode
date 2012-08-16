@@ -7,6 +7,10 @@ import xlrd # from http://www.lexicon.net/sjmachin/xlrd.htm, to read XLS-Files (
 
 Drive = 'R:\SLS'
 
+if os.path.exists(Drive) == False:
+	print 'Cannot read ' + str(Drive) + '. Exiting!'
+	exit()
+
 VoxelSize = 1.48
 SliceDistance = 10
 
@@ -29,14 +33,15 @@ SliceDistance = 10
 	#~ bar = [SOME EXPRESSION for item in some_iterable]
 
 # Reading Volume Data of RUL from Stefans Data-File
+ShrinkageFactor = 0.6
 XLSFile = xlrd.open_workbook('p:\doc\#R\AcinusPaper\Datenblattstefan.xls')
 WorkSheet = XLSFile.sheet_by_index(5) # load worksheet 6 (remember, python starts at 0)
 #~ RULVolume = [ WorkSheet.cell(24+int(Sample),9).value for Sample in range(5) ] # load all Samples
 #~ Name = ['A','B','C','D','E'] # load all Samples
-RULVolume = [ WorkSheet.cell(24+int(Sample),9).value for Sample in [1,3,4] ] # only load B,D and E
+RULVolume = [ WorkSheet.cell(24+int(Sample),9).value*ShrinkageFactor for Sample in [1,3,4] ] # only load B,D and E
 Name = ['B','D','E'] # only load B,D and E
 for Sample in range(len(Name)):
-	print 'The RUL volume of',WhichRat+Name[Sample],'is',RULVolume[Sample],'cm^3'
+	print 'The RUL volume of',WhichRat+Name[Sample],'is',RULVolume[Sample],'cm^3, including Shrinkagefactor of',ShrinkageFactor,'x'
 print '---'
 
 # Reading Data from STEPanizer XLS-Files (which actually are just .csv)
@@ -48,11 +53,10 @@ SamplePath = {}
 for Sample in range(len(Rat)):
 	SamplePath[Sample] = os.path.join(Drive,Beamtime[Sample],WhichRat + Rat[Sample])
 	if os.path.exists(SamplePath[Sample]):
-		print SamplePath[Sample],'does exist'
+		print SamplePath[Sample],'exists and contains',len(glob.glob(os.path.join(SamplePath[Sample],'acin*',STEPanizerDir))),\
+		'acinus directories'
 	else:
 		print SamplePath[Sample],'does not exist'
-	print 'and contains',len(glob.glob(os.path.join(SamplePath[Sample],'acin*',STEPanizerDir))),\
-		'directories with acini'
 print '---'
 
 # Generating a list of the filenames
@@ -64,15 +68,15 @@ for Sample in range(len(Rat)):
 	for CurrentFile in CSVFile[Sample][:]:
 		AcinusNumber = int(CurrentFile[CurrentFile.find('acinus')+len('acinus'):CurrentFile.find('acinus')+len('acinus')+2])
 		tmp.append(AcinusNumber)
-MaximumAcini = max(tmp) +1
+MaximumAcini = max(tmp) + 1
 
 # Read necessary data from each STEPanizer .csv-file, calculate volume of acinus
 AcinarVolume = [[np.nan for Acinus in range(MaximumAcini)] for Sample in range(len(Rat))]
 SurfaceDensity = [[np.nan for Acinus in range(MaximumAcini)] for Sample in range(len(Rat))]
 AbsoluteSurface = [[np.nan for Acinus in range(MaximumAcini)] for Sample in range(len(Rat))]
 for Sample in range(len(Rat)):
-	print 'reading and calculating values for R108C60' + Rat[Sample]
-	for CurrentFile in CSVFile[Sample][:]:
+	print 'R108C60' + Rat[Sample] + ': Reading and calculating',len(glob.glob(os.path.join(SamplePath[Sample],'acin*',STEPanizerDir))),'sets of values'
+	for CurrentFile in sorted(CSVFile[Sample][:]):
 		AcinusNumber = int(CurrentFile[CurrentFile.find('acinus')+len('acinus'):CurrentFile.find('acinus')+len('acinus')+2])
 		FileData = csv.reader(open(CurrentFile,'rb'),dialect=csv.excel_tab)
 		for line in FileData:
@@ -87,21 +91,32 @@ for Sample in range(len(Rat)):
 					Area = double(line[1])*PixelSize**2
 				if line[0] == 'l(p):':
 					Length = double(line[1])*PixelSize
+				if line[0] == 'Number of basic tiles:':
+					Tiles = int(line[1])
+				if line[0] == 'Number of test points:':
+					TestPoints = int(line[1])
+		# Give out counted/assessed data
+		print 'Acinus', "%02d" % (AcinusNumber,),\
+			'|',"%03d" % (len(glob.glob(os.path.join((os.path.join(SamplePath[Sample],'acinus'+ str("%02d" % (AcinusNumber)),STEPanizerDir)),'*.jpg')))),'Files',\
+			'|',Tiles,'Tiles',\
+			'|',"%04d" % (Interceptions),'Interceptions',\
+			'|',"%03d" % (Points),'Points in Acinus'
+
 		#~ print 'Acinus',str(AcinusNumber) + ':',Interceptions,'interceptions,',Points,'points inside & area a(p) of',int(np.round(Area)),'um^2'
 		# Volume = Points * Area * Voxelsize * Slicedistance		
 		AcinarVolume[Sample][AcinusNumber] = Points * Area * VoxelSize * SliceDistance
 		#~ print 'The volume of acinus',AcinusNumber,'is',Points,'*',int(np.round(Area)),'*',VoxelSize,'*',SliceDistance,'i.e.',int(AcinarVolume[Sample][AcinusNumber]),'um^3'
 			
-		# Surface Density = 2 * Interceptions * Length
+		# Surface Density = 2 * Interceptions / Length
 		SurfaceDensity[Sample][AcinusNumber] = 2 * Interceptions / Length
 		#~ print 'The SurfaceDensity of acinus',AcinusNumber,'is 2 *',Interceptions,'*',int(Length)
 		
 		# Absolute Surface = absolute Volume * Volume Density * Surface Density
-		AbsoluteSurface[Sample][AcinusNumber] = AcinarVolume[Sample][AcinusNumber] * SurfaceDensity[Sample][AcinusNumber]
-		##############################
-		# How and where can I get the volume density?
-		##############################
+		AbsoluteSurface[Sample][AcinusNumber] = AcinarVolume[Sample][AcinusNumber] * SurfaceDensity[Sample][AcinusNumber]	
+
 print '---'
+
+exit()
 
 color=['r','b','y']
 
