@@ -79,7 +79,7 @@ NonParenchymalPoints= [[np.nan for Acinus in range(MaximumAcini)] for Sample in 
 ParenchymalPoints = [[np.nan for Acinus in range(MaximumAcini)] for Sample in range(len(Rat))]
 ParenchymalVolume = [[np.nan for Acinus in range(MaximumAcini)] for Sample in range(len(Rat))]
 for Sample in range(len(Rat)):
-	print 'R108C60' + Rat[Sample] + ': Reading and calculating',len(glob.glob(os.path.join(SamplePath[Sample],'acin*',STEPanizerDir))),'sets of valuesw'
+	print Beamtime[Sample] + '\R108C60' + Rat[Sample] + ': Reading and calculating',len(glob.glob(os.path.join(SamplePath[Sample],'acin*',STEPanizerDir))),'sets of valuesw'
 	for CurrentFile in sorted(CSVFile[Sample][:]):
 		AcinusNumber = int(CurrentFile[CurrentFile.find('acinus')+len('acinus'):CurrentFile.find('acinus')+len('acinus')+2])
 		TotalSlices = len(glob.glob(os.path.join((os.path.join(SamplePath[Sample],'acinus'+ str("%02d" % (AcinusNumber)),STEPanizerDir)),'*.jpg')))
@@ -132,14 +132,14 @@ for Sample in range(len(Rat)):
 
 print '---'
 
-for Sample in range(len(Rat)):
-	print WhichRat + Rat[Sample]
-	print 'TotalTestPoints',TotalTestPoints[Sample]
-	print 'ParenchymalPoints',ParenchymalPoints[Sample]
-	print 'NonParenchymalPoints',NonParenchymalPoints[Sample]
-	print 'ParenchymalVolume',ParenchymalVolume[Sample]
-	print 'AcinarVolume',AcinarVolume[Sample]
-	print '---'
+#~ for Sample in range(len(Rat)):
+	#~ print WhichRat + Rat[Sample]
+	#~ print 'TotalTestPoints',TotalTestPoints[Sample]
+	#~ print 'ParenchymalPoints',ParenchymalPoints[Sample]
+	#~ print 'NonParenchymalPoints',NonParenchymalPoints[Sample]
+	#~ print 'ParenchymalVolume',ParenchymalVolume[Sample]
+	#~ print 'AcinarVolume',AcinarVolume[Sample]
+	#~ print '---'
 	
 color=['r','b','y']
 
@@ -165,17 +165,17 @@ plt.figure(figsize=(16,9))
 for Sample in range(len(Rat)):
 	plt.subplot(311)
 	plt.scatter(range(MaximumAcini),AcinarVolume[Sample],c=color[Sample])
-	plt.legend([WhichRat + Rat[0],WhichRat + Rat[1],WhichRat + Rat[2]])	
+	plt.legend([Beamtime[0] + "\\" + WhichRat + Rat[0],Beamtime[1] + '\\' + WhichRat + Rat[1],Beamtime[2] + '\\' + WhichRat + Rat[2]])	
 	plt.title('Volume (TestPoints * Area * Voxelsize * Slicedistance)')
 	plt.xlim([0,MaximumAcini])
 	plt.subplot(312)
 	plt.scatter(range(MaximumAcini),SurfaceDensity[Sample],c=color[Sample])
-	plt.legend([WhichRat + Rat[0],WhichRat + Rat[1],WhichRat + Rat[2]])	
+	plt.legend([Beamtime[0] + "\\" + WhichRat + Rat[0],Beamtime[1] + '\\' + WhichRat + Rat[1],Beamtime[2] + '\\' + WhichRat + Rat[2]])	
 	plt.title('Surface Density (2 * Interceptions * Length)')
 	plt.xlim([0,MaximumAcini])
 	plt.subplot(313)
 	plt.scatter(range(MaximumAcini),AbsoluteSurface[Sample],c=color[Sample])
-	plt.legend([WhichRat + Rat[0],WhichRat + Rat[1],WhichRat + Rat[2]])	
+	plt.legend([Beamtime[0] + "\\" + WhichRat + Rat[0],Beamtime[1] + '\\' + WhichRat + Rat[1],Beamtime[2] + '\\' + WhichRat + Rat[2]])	
 	plt.title('Absolute Surface (absolute Volume * Volume Density * Surface Density)')
 	plt.xlim([0,MaximumAcini])
 plt.savefig('volume.png',transparent=False)
