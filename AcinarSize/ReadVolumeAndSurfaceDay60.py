@@ -12,19 +12,12 @@ if os.path.exists(Drive) == False:
 	exit()
 
 VoxelSize = 1.48
-#~ VoxelSize = 1.48e-6
 SliceNumber = 10
 
 WhichRat = 'R108C60'
 Rat = ['B_B1_mrg','Dt-mrg','Et-mrg']
 Beamtime = ['2010c','2009f\mrg','2009f\mrg']
 SliceNumber = 10
-
-#~ WhichRat = 'R108C36'
-#~ Rat = ['Dt-mrg']
-#~ Beamtime = ['2010a\mrg']
-#~ VoxelSize = 2.96
-#~ SliceNumber = 4
 
 # According to http://stackoverflow.com/a/2397192 instead of 
 	#~ bar = []
@@ -35,17 +28,22 @@ SliceNumber = 10
 
 # Reading Volume Data of RUL from Stefans Data-File
 ShrinkageFactor = 1
+print 'Calculating everything with a Shrinkagefactor of',str(ShrinkageFactor) +'x'
 XLSFile = xlrd.open_workbook('p:\doc\#R\AcinusPaper\Datenblattstefan.xls')
 WorkSheet = XLSFile.sheet_by_index(0)
-#~ RULVolume = [ WorkSheet.cell(24+int(Sample),9).value for Sample in range(5) ] # load all Samples
-#~ Name = ['A','B','C','D','E'] # load all Samples
 RULVolume = [ WorkSheet.cell(70+int(Sample),9).value*ShrinkageFactor for Sample in [1,3,4] ] # only load B,D and E
+AbsoluteAirspaceSurface = [ WorkSheet.cell(70+int(Sample),94).value*ShrinkageFactor for Sample in [1,3,4] ] # only load B,D and E
 Name = ['B','D','E'] # only load B,D and E
-for Sample in range(len(Name)):
-	print 'The RUL volume of',WhichRat+Name[Sample],'is',RULVolume[Sample],'cm^3, including Shrinkagefactor of',str(ShrinkageFactor) +'x'
+for Sample in range(len(Rat)):
+	print WhichRat+Name[Sample]+':'
+	print 'RUL volume of',RULVolume[Sample],'cm^3, including Shrinkagefactor of',str(ShrinkageFactor) +'x'
+	print 'Absolute airspace surface of',AbsoluteAirspaceSurface[Sample],'cm^2, including Shrinkagefactor of',str(ShrinkageFactor) +'x'
+if ShrinkageFactor != 1:
+	print '-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!'
+	print ' Check the calculation of the values above, since ShrinkageFactor != 1! '
+	print '     Stefan thinks he did not use the shrinkage for the surface...      '
+	print '-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!'
 print '---'
-
-exit()
 
 # Reading Data from STEPanizer XLS-Files (which actually are just .csv)
 STEPanizerDir = 'voxelsize'+str(VoxelSize)+'-every'+str(SliceNumber)+'slice'
@@ -106,7 +104,7 @@ for Sample in range(len(Rat)):
 		# Give out counted/assessed data
 		print 'Acinus', "%02d" % (AcinusNumber,),\
 			'|',"%03d" % (TotalSlices),'Files',\
-			'|',AllAreaTestPoints,'Number of Test points per image',\
+			'|',AllAreaTestPoints,'test points per image',\
 			'|',"%04d" % (Interceptions),'Interceptions',\
 			'|',"%03d" % (AcinusTestPoints),'Points in Acinus',\
 			'|',"%03d" % (NParenchymalPoints),'Nonparenchymal Points'
@@ -131,7 +129,7 @@ for Sample in range(len(Rat)):
 		# Absolute Surface = absolute Volume * Volume Density * Surface Density
 		# According to Stefan: S(Acinus, Lunge) = Sv(Acinus,Parenchym) * Vv(Parencym,Lunge) * VLunge
 		AbsoluteSurface[Sample][AcinusNumber] = SurfaceDensity[Sample][AcinusNumber] * AcinarVolume[Sample][AcinusNumber]
-
+		
 print '---'
 
 #~ for Sample in range(len(Rat)):
@@ -145,23 +143,23 @@ print '---'
 	
 color=['r','b','y']
 
-#~ plt.figure(figsize=(16,9))
-#~ for Sample in range(len(Rat)):
-	#~ plt.subplot(3,3,Sample+1)#,axisbg=color[Sample])
-	#~ plt.boxplot([x for x in AcinarVolume[Sample] if not math.isnan(x)],1) # http://is.gd/Ywxpiz remove all np.Nan for boxplotting
-	#~ plt.title(str(WhichRat) + str(Rat[Sample])+' (RUL-Volume='+str(RULVolume[Sample])+' cm^3)')
-	#~ plt.ylabel('Acinar Volume')
-	#~ plt.ylim([0,8e7])
-	#~ plt.subplot(3,3,Sample+1+3)#,axisbg=color[Sample])
-	#~ plt.boxplot([x for x in SurfaceDensity[Sample] if not math.isnan(x)],1) # http://is.gd/Ywxpiz remove all np.Nan for boxplotting
-	#~ plt.ylabel('Surface Density')
-	#~ plt.ylim([0,40])	
-	#~ plt.subplot(3,3,Sample+1+6)#,axisbg=color[Sample])
-	#~ plt.boxplot([x for x in AbsoluteSurface[Sample] if not math.isnan(x)],1) # http://is.gd/Ywxpiz remove all np.Nan for boxplotting
-	#~ plt.ylabel('Absolute Surface')
-	#~ plt.ylim([0,1.5e19])
-#~ plt.savefig('boxplots.png',transparent=False)
-#~ plt.draw()
+plt.figure(figsize=(16,9))
+for Sample in range(len(Rat)):
+	plt.subplot(3,3,Sample+1)#,axisbg=color[Sample])
+	plt.boxplot([x for x in AcinarVolume[Sample] if not math.isnan(x)],1) # http://is.gd/Ywxpiz remove all np.Nan for boxplotting
+	plt.title(str(WhichRat) + str(Rat[Sample])+' (RUL-Volume='+str(RULVolume[Sample])+' cm^3)')
+	plt.ylabel('Acinar Volume')
+	plt.ylim([0,6e9])
+	plt.subplot(3,3,Sample+1+3)#,axisbg=color[Sample])
+	plt.boxplot([x for x in SurfaceDensity[Sample] if not math.isnan(x)],1) # http://is.gd/Ywxpiz remove all np.Nan for boxplotting
+	plt.ylabel('Surface Density')
+	plt.ylim([0,0.1])	
+	plt.subplot(3,3,Sample+1+6)#,axisbg=color[Sample])
+	plt.boxplot([x for x in AbsoluteSurface[Sample] if not math.isnan(x)],1) # http://is.gd/Ywxpiz remove all np.Nan for boxplotting
+	plt.ylabel('Absolute Surface')
+	plt.ylim([0,9e7])
+plt.savefig('boxplots.png',transparent=False)
+plt.draw()
 
 plt.figure(figsize=(16,9))
 for Sample in range(len(Rat)):
@@ -178,38 +176,27 @@ for Sample in range(len(Rat)):
 	plt.subplot(313)
 	plt.scatter(range(MaximumAcini),AbsoluteSurface[Sample],c=color[Sample])
 	plt.legend([Beamtime[0] + "\\" + WhichRat + Rat[0],Beamtime[1] + '\\' + WhichRat + Rat[1],Beamtime[2] + '\\' + WhichRat + Rat[2]])	
-	plt.title('"Absolute Surface (probably not correct ATM)" (absolute Volume * Volume Density * Surface Density)')
+	plt.title('Absolute Surface (SurfaceDensity * AcinarVolume)')
 	plt.xlim([0,MaximumAcini])
 plt.savefig('volume.png',transparent=False)
 plt.draw()
 
-print 'Mittlers Volume'
-tmp = []
+np.set_printoptions(precision=4)
+print 'Mean acinar volume for single samples'
+MeanVolume = [np.nan for Sample in range(len(Rat))]
 for Sample in range(len(Rat)):
-	mdat = np.ma.masked_array(AcinarVolume[Sample],np.isnan(AcinarVolume[Sample]))
-	print 'R108C60' + Rat[Sample] + ':', np.mean(mdat)/1e12, 'cm^3'
+	MeanVolume[Sample] = np.mean(np.ma.masked_array(AcinarVolume[Sample],np.isnan(AcinarVolume[Sample])))
+	print 'R108C60' + Rat[Sample] + ':', MeanVolume[Sample]/1e12, 'cm^3'
+print 'Mean acinar volume for all samples:', np.mean(MeanVolume)/1e12, 'cm^3'
+print '---'
 
-print 'Mittleri Oberflaechi'	
-tmp = []
+print 'Mean acinar surface for single samples'
+MeanSurface = [np.nan for Sample in range(len(Rat))]
 for Sample in range(len(Rat)):
-	mdat = np.ma.masked_array(AbsoluteSurface[Sample],np.isnan(AbsoluteSurface[Sample]))
-	print 'R108C60' + Rat[Sample] + ':', np.mean(mdat)/1e8, 'cm^2'
+	MeanSurface[Sample] = np.mean(np.ma.masked_array(AbsoluteSurface[Sample],np.isnan(AbsoluteSurface[Sample])))
+	print 'R108C60' + Rat[Sample] + ':', MeanSurface[Sample]/1e8, 'cm^2'
+print 'Mean acinar surface for all samples:', np.mean(MeanSurface)/1e8, 'cm^2'
 
-#~ print tmp	
-#~ print np.mean(tmp)	
-#~ plt.show()
+# NonParenchymal absolute Volume / mean acinar volume = Number of Acini
 
-#~ # Save Data
-#~ AcinusWriter = csv.writer(open('acini.csv', 'wb'), delimiter=';')
-#~ tmp = range(MaximumAcini)
-#~ tmp.insert(0,'Acinus')
-#~ AcinusWriter.writerow(tmp)
-#~ for Sample in range(len(Rat)):
-	#~ AcinarVolume[Sample].insert(0,'AcinarVolume ' + WhichRat + Rat[Sample])
-	#~ AcinusWriter.writerow(AcinarVolume[Sample][:])
-#~ for Sample in range(len(Rat)):
-	#~ SurfaceDensity[Sample].insert(0,'SurfaceDensity ' + WhichRat + Rat[Sample])
-	#~ AcinusWriter.writerow(SurfaceDensity[Sample][:])
-#~ for Sample in range(len(Rat)):
-	#~ AbsoluteSurface[Sample].insert(0,'AbsoluteSurface ' + WhichRat + Rat[Sample])
-	#~ AcinusWriter.writerow(AbsoluteSurface[Sample][:])
+plt.show()
