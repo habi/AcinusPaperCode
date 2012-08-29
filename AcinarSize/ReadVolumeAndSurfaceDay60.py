@@ -12,18 +12,19 @@ if os.path.exists(Drive) == False:
 	exit()
 
 VoxelSize = 1.48
-SliceDistance = 10
+#~ VoxelSize = 1.48e-6
+SliceNumber = 10
 
 WhichRat = 'R108C60'
 Rat = ['B_B1_mrg','Dt-mrg','Et-mrg']
 Beamtime = ['2010c','2009f\mrg','2009f\mrg']
-SliceDistance = 10
+SliceNumber = 10
 
 #~ WhichRat = 'R108C36'
 #~ Rat = ['Dt-mrg']
 #~ Beamtime = ['2010a\mrg']
 #~ VoxelSize = 2.96
-#~ SliceDistance = 4
+#~ SliceNumber = 4
 
 # According to http://stackoverflow.com/a/2397192 instead of 
 	#~ bar = []
@@ -33,19 +34,21 @@ SliceDistance = 10
 	#~ bar = [SOME EXPRESSION for item in some_iterable]
 
 # Reading Volume Data of RUL from Stefans Data-File
-ShrinkageFactor = 0.6
+ShrinkageFactor = 1
 XLSFile = xlrd.open_workbook('p:\doc\#R\AcinusPaper\Datenblattstefan.xls')
-WorkSheet = XLSFile.sheet_by_index(5) # load worksheet 6 (remember, python starts at 0)
+WorkSheet = XLSFile.sheet_by_index(0)
 #~ RULVolume = [ WorkSheet.cell(24+int(Sample),9).value for Sample in range(5) ] # load all Samples
 #~ Name = ['A','B','C','D','E'] # load all Samples
-RULVolume = [ WorkSheet.cell(24+int(Sample),9).value*ShrinkageFactor for Sample in [1,3,4] ] # only load B,D and E
+RULVolume = [ WorkSheet.cell(70+int(Sample),9).value*ShrinkageFactor for Sample in [1,3,4] ] # only load B,D and E
 Name = ['B','D','E'] # only load B,D and E
 for Sample in range(len(Name)):
-	print 'The RUL volume of',WhichRat+Name[Sample],'is',RULVolume[Sample],'cm^3, including Shrinkagefactor of',ShrinkageFactor,'x'
+	print 'The RUL volume of',WhichRat+Name[Sample],'is',RULVolume[Sample],'cm^3, including Shrinkagefactor of',str(ShrinkageFactor) +'x'
 print '---'
 
+exit()
+
 # Reading Data from STEPanizer XLS-Files (which actually are just .csv)
-STEPanizerDir = 'voxelsize'+str(VoxelSize)+'-every'+str(SliceDistance)+'slice'
+STEPanizerDir = 'voxelsize'+str(VoxelSize)+'-every'+str(SliceNumber)+'slice'
 
 # See how many .csv-Files we actually have
 SamplePath = {}
@@ -89,7 +92,7 @@ for Sample in range(len(Rat)):
 				if line[1] == 'Interception with Tissue':
 					Interceptions = int(line[3])
 				if line[1] == 'Point inside Acinus':
-					TestPoints = int(line[3])
+					AcinusTestPoints = int(line[3])
 				if line[1] == 'Non-Parenchymal Points':
 					NParenchymalPoints = int(line[3])
 				if line[0] == 'Pixel size:':
@@ -97,38 +100,37 @@ for Sample in range(len(Rat)):
 				if line[0] == 'a(p):':
 					Area = double(line[1])*PixelSize**2
 				if line[0] == 'l(p):':
-					Length = double(line[1])*PixelSize
+					LinePointLength = double(line[1])*PixelSize
 				if line[0] == 'Number of test points:':
-					TestPoints = int(line[1])
-				if line[0] == 'Number of test points:':
-					TestPoints = int(line[1])
+					AllAreaTestPoints = int(line[1])
 		# Give out counted/assessed data
 		print 'Acinus', "%02d" % (AcinusNumber,),\
 			'|',"%03d" % (TotalSlices),'Files',\
-			'|',TestPoints,'Test points',\
+			'|',AllAreaTestPoints,'Number of Test points per image',\
 			'|',"%04d" % (Interceptions),'Interceptions',\
-			'|',"%03d" % (TestPoints),'Points in Acinus',\
+			'|',"%03d" % (AcinusTestPoints),'Points in Acinus',\
 			'|',"%03d" % (NParenchymalPoints),'Nonparenchymal Points'
 
 		#~ print 'Acinus',str(AcinusNumber) + ':',Interceptions,'interceptions,',TestPoints,'points inside & area a(p) of',int(np.round(Area)),'um^2'
-		# Volume = TestPoints * Area * Voxelsize * Slicedistance		
-		AcinarVolume[Sample][AcinusNumber] = TestPoints * Area * VoxelSize * SliceDistance
-		#~ print 'The volume of acinus',AcinusNumber,'is',TestPoints,'*',int(np.round(Area)),'*',VoxelSize,'*',SliceDistance,'i.e.',int(AcinarVolume[Sample][AcinusNumber]),'um^3'
+		# Volume = AcinusTestPoints * Area * PixelSize * SliceNumber * VoxelSize		
+		AcinarVolume[Sample][AcinusNumber] = AcinusTestPoints * Area * PixelSize * SliceNumber * VoxelSize # PixelSize == STEPanizer, VoxelSize == TOMCAT
+		#~ print 'The volume of acinus',AcinusNumber,'is',AcinusTestPoints,'*',int(np.round(Area)),'*',PixelSize,'*',SliceNumber,'i.e.',int(AcinarVolume[Sample][AcinusNumber]),'um^3'
 							
-		# Total of all points = TestPoints (in file) * Total of slices
-		TotalTestPoints[Sample][AcinusNumber] = TestPoints * TotalSlices
+		# Total of all points = AllAreaTestPoints (in file) * Total of slices
+		TotalTestPoints[Sample][AcinusNumber] = AllAreaTestPoints * TotalSlices
 		
-		# Parenchym-Volume = Parenchymal points * Area * Voxelsize * SliceDistance. Parenchymal points are total points minus NParenchymalpoints (which are all points outside the sample and in non-parenchyma)
+		# Parenchym-Volume = Parenchymal points * Area * PixelSize * SliceNumber * VoxelSize. Parenchymal points are total points minus NParenchymalpoints (which are all points outside the sample and in non-parenchyma)
 		ParenchymalPoints[Sample][AcinusNumber] = TotalTestPoints[Sample][AcinusNumber] - NParenchymalPoints
 		NonParenchymalPoints[Sample][AcinusNumber] = NParenchymalPoints
-		ParenchymalVolume[Sample][AcinusNumber] = ParenchymalPoints[Sample][AcinusNumber] * Area * VoxelSize * SliceDistance
+		ParenchymalVolume[Sample][AcinusNumber] = ParenchymalPoints[Sample][AcinusNumber] * Area * PixelSize * SliceNumber * VoxelSize
 		
 		# Surface Density = 2 * Interceptions / Length
+		Length = LinePointLength * AcinusTestPoints # Linepointlength has to be calculated for the acinar reference space.
 		SurfaceDensity[Sample][AcinusNumber] = 2 * Interceptions / Length
 		
 		# Absolute Surface = absolute Volume * Volume Density * Surface Density
 		# According to Stefan: S(Acinus, Lunge) = Sv(Acinus,Parenchym) * Vv(Parencym,Lunge) * VLunge
-		AbsoluteSurface[Sample][AcinusNumber] = SurfaceDensity[Sample][AcinusNumber] * ParenchymalVolume[Sample][AcinusNumber] * AcinarVolume[Sample][AcinusNumber]
+		AbsoluteSurface[Sample][AcinusNumber] = SurfaceDensity[Sample][AcinusNumber] * AcinarVolume[Sample][AcinusNumber]
 
 print '---'
 
@@ -143,45 +145,59 @@ print '---'
 	
 color=['r','b','y']
 
-plt.figure(figsize=(16,9))
-for Sample in range(len(Rat)):
-	plt.subplot(3,3,Sample+1)#,axisbg=color[Sample])
-	plt.boxplot([x for x in AcinarVolume[Sample] if not math.isnan(x)],1) # http://is.gd/Ywxpiz remove all np.Nan for boxplotting
-	plt.title(str(WhichRat) + str(Rat[Sample])+' (RUL-Volume='+str(RULVolume[Sample])+' cm^3)')
-	plt.ylabel('Acinar Volume')
-	plt.ylim([0,8e7])
-	plt.subplot(3,3,Sample+1+3)#,axisbg=color[Sample])
-	plt.boxplot([x for x in SurfaceDensity[Sample] if not math.isnan(x)],1) # http://is.gd/Ywxpiz remove all np.Nan for boxplotting
-	plt.ylabel('Surface Density')
-	plt.ylim([0,40])	
-	plt.subplot(3,3,Sample+1+6)#,axisbg=color[Sample])
-	plt.boxplot([x for x in AbsoluteSurface[Sample] if not math.isnan(x)],1) # http://is.gd/Ywxpiz remove all np.Nan for boxplotting
-	plt.ylabel('Absolute Surface')
-	plt.ylim([0,1.5e19])
-plt.savefig('boxplots.png',transparent=False)
-plt.draw()
+#~ plt.figure(figsize=(16,9))
+#~ for Sample in range(len(Rat)):
+	#~ plt.subplot(3,3,Sample+1)#,axisbg=color[Sample])
+	#~ plt.boxplot([x for x in AcinarVolume[Sample] if not math.isnan(x)],1) # http://is.gd/Ywxpiz remove all np.Nan for boxplotting
+	#~ plt.title(str(WhichRat) + str(Rat[Sample])+' (RUL-Volume='+str(RULVolume[Sample])+' cm^3)')
+	#~ plt.ylabel('Acinar Volume')
+	#~ plt.ylim([0,8e7])
+	#~ plt.subplot(3,3,Sample+1+3)#,axisbg=color[Sample])
+	#~ plt.boxplot([x for x in SurfaceDensity[Sample] if not math.isnan(x)],1) # http://is.gd/Ywxpiz remove all np.Nan for boxplotting
+	#~ plt.ylabel('Surface Density')
+	#~ plt.ylim([0,40])	
+	#~ plt.subplot(3,3,Sample+1+6)#,axisbg=color[Sample])
+	#~ plt.boxplot([x for x in AbsoluteSurface[Sample] if not math.isnan(x)],1) # http://is.gd/Ywxpiz remove all np.Nan for boxplotting
+	#~ plt.ylabel('Absolute Surface')
+	#~ plt.ylim([0,1.5e19])
+#~ plt.savefig('boxplots.png',transparent=False)
+#~ plt.draw()
 
 plt.figure(figsize=(16,9))
 for Sample in range(len(Rat)):
 	plt.subplot(311)
 	plt.scatter(range(MaximumAcini),AcinarVolume[Sample],c=color[Sample])
 	plt.legend([Beamtime[0] + "\\" + WhichRat + Rat[0],Beamtime[1] + '\\' + WhichRat + Rat[1],Beamtime[2] + '\\' + WhichRat + Rat[2]])	
-	plt.title('Volume (TestPoints * Area * Voxelsize * Slicedistance)')
+	plt.title('Volume (AcinusTestPoints * Area * PixelSize * SliceNumber * VoxelSize)')
 	plt.xlim([0,MaximumAcini])
 	plt.subplot(312)
 	plt.scatter(range(MaximumAcini),SurfaceDensity[Sample],c=color[Sample])
 	plt.legend([Beamtime[0] + "\\" + WhichRat + Rat[0],Beamtime[1] + '\\' + WhichRat + Rat[1],Beamtime[2] + '\\' + WhichRat + Rat[2]])	
-	plt.title('Surface Density (2 * Interceptions * Length)')
+	plt.title('Surface Density (2 * Interceptions / Length)')
 	plt.xlim([0,MaximumAcini])
 	plt.subplot(313)
 	plt.scatter(range(MaximumAcini),AbsoluteSurface[Sample],c=color[Sample])
 	plt.legend([Beamtime[0] + "\\" + WhichRat + Rat[0],Beamtime[1] + '\\' + WhichRat + Rat[1],Beamtime[2] + '\\' + WhichRat + Rat[2]])	
-	plt.title('Absolute Surface (absolute Volume * Volume Density * Surface Density)')
+	plt.title('"Absolute Surface (probably not correct ATM)" (absolute Volume * Volume Density * Surface Density)')
 	plt.xlim([0,MaximumAcini])
 plt.savefig('volume.png',transparent=False)
 plt.draw()
 
-plt.show()
+print 'Mittlers Volume'
+tmp = []
+for Sample in range(len(Rat)):
+	mdat = np.ma.masked_array(AcinarVolume[Sample],np.isnan(AcinarVolume[Sample]))
+	print 'R108C60' + Rat[Sample] + ':', np.mean(mdat)/1e12, 'cm^3'
+
+print 'Mittleri Oberflaechi'	
+tmp = []
+for Sample in range(len(Rat)):
+	mdat = np.ma.masked_array(AbsoluteSurface[Sample],np.isnan(AbsoluteSurface[Sample]))
+	print 'R108C60' + Rat[Sample] + ':', np.mean(mdat)/1e8, 'cm^2'
+
+#~ print tmp	
+#~ print np.mean(tmp)	
+#~ plt.show()
 
 #~ # Save Data
 #~ AcinusWriter = csv.writer(open('acini.csv', 'wb'), delimiter=';')
