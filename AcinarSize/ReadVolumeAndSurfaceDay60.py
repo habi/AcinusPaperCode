@@ -144,27 +144,25 @@ color=['c','r','m','b','y']
 
 plt.figure(figsize=(16,9))
 #~ subplots_adjust(hspace=0.01)
-
 for Sample in range(len(Rat)):
 	plot1 = plt.subplot(3,len(Rat),Sample+1)#,axisbg=color[Sample])
 	if Beamtime[Sample] != '':
 		plt.boxplot([x for x in AcinarVolume[Sample] if not math.isnan(x)],1) # http://is.gd/Ywxpiz remove all np.Nan for boxplotting
 	plt.title(str(WhichRat) + str(Rat[Sample])+'\nRUL-Volume='+str(RULVolume[Sample])+' cm^3')
 	plt.ylabel('Acinar Volume')
-	#~ plt.ylim([0,6e9])
+	plt.ylim([0,6e9])
 	plot2 = plt.subplot(3,len(Rat),Sample+1+len(Rat))#,axisbg=color[Sample])
 	if Beamtime[Sample] != '':
 		plt.boxplot([x for x in SurfaceDensity[Sample] if not math.isnan(x)],1) # http://is.gd/Ywxpiz remove all np.Nan for boxplotting
 	plt.ylabel('Surface Density')
-	#~ plt.ylim([0,0.1])
+	plt.ylim([0,0.09])
 	plot3 = plt.subplot(3,len(Rat),Sample+1+2*len(Rat))#,axisbg=color[Sample])
 	if Beamtime[Sample] != '':
 		plt.boxplot([x for x in AbsoluteSurface[Sample] if not math.isnan(x)],1) # http://is.gd/Ywxpiz remove all np.Nan for boxplotting
 	plt.ylabel('Absolute Surface')
-	#~ plt.ylim([0,9e7])
+	plt.ylim([0,2.5e8])
 	xticklabels = plot1.get_xticklabels() + plot2.get_xticklabels() + plot3.get_xticklabels()
 	setp(xticklabels, visible=False)
-
 plt.savefig('boxplot.png',transparent=False)
 plt.draw()
 
@@ -186,8 +184,8 @@ for Sample in range(len(Rat)):
 	plt.title('Absolute Surface (SurfaceDensity * AcinarVolume)')
 	plt.xlim([0,MaximumAcini])
 	plt.legend([Beamtime[1] + "\\" + WhichRat + Rat[1],Beamtime[3] + '\\' + WhichRat + Rat[3],Beamtime[4] + '\\' + WhichRat + Rat[4]],\
-		loc='upper center', bbox_to_anchor=(0.5, -0.1),fancybox=True, shadow=True, ncol=3)
-	
+		loc='upper center', bbox_to_anchor=(0.5, -0.1), ncol=3)
+subplots_adjust(hspace=0.25)
 plt.savefig('volume.png',transparent=False)
 plt.draw()
 
@@ -244,4 +242,4 @@ print ''
 print 'Stefans mean absolute airspace surface is',np.round(np.mean(AbsoluteAirspaceSurface),decimals=3),'cm^2.'
 print 'Our mean airspace surface is',np.round(np.mean(np.ma.masked_array(DiffusionSurface,np.isnan(DiffusionSurface))),decimals=3),'cm^2.'
 
-#~ plt.show()
+plt.show()
