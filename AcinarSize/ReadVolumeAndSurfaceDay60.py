@@ -77,6 +77,18 @@ for Sample in range(len(Rat)):
 		tmp.append(AcinusNumber)
 MaximumAcini = max(tmp) + 1
 
+# Read Volumes from .dcm-Files generated with MeVisLab
+MeVisLabVolume = [[np.nan for Acinus in range(MaximumAcini)] for Sample in range(len(Rat))]
+for Sample in range(len(Rat)):
+	if Beamtime[Sample] == '':
+		print 'R108C60' + Rat[Sample] + ' was not measured'
+	else:
+		print Beamtime[Sample] + '\R108C60' + Rat[Sample] + ': Reading volumes from .dcm-Files'
+		for CurrentFile in sorted(glob.glob(os.path.join(SamplePath[Sample],'*.dcm'))):
+			AcinusNumber = int(CurrentFile[CurrentFile.find('acinus')+len('acinus'):CurrentFile.find('.volume')])
+			MeVisLabVolume[Sample][AcinusNumber] = float(CurrentFile[CurrentFile.find('volume')+len('volume'):CurrentFile.find('.pixelsize')])
+			print 'MeVisLab-Volume of acinus',AcinusNumber,'is',MeVisLabVolume[Sample][AcinusNumber]
+
 # Read necessary data from each STEPanizer .csv-file, calculate volume of acinus
 AcinarVolume = [[np.nan for Acinus in range(MaximumAcini)] for Sample in range(len(Rat))]
 SurfaceDensity = [[np.nan for Acinus in range(MaximumAcini)] for Sample in range(len(Rat))]
@@ -137,13 +149,27 @@ for Sample in range(len(Rat)):
 			
 			# Absolute Surface = absolute Volume * Volume Density * Surface Density
 			AbsoluteSurface[Sample][AcinusNumber] = SurfaceDensity[Sample][AcinusNumber] * AcinarVolume[Sample][AcinusNumber]
-	
 print '---'
 
 color=['c','r','m','b','y']
 
+# Plot MeVisLab- against STEPanizer-volumes
 plt.figure(figsize=(16,9))
-#~ subplots_adjust(hspace=0.01)
+for Sample in range(len(Rat)):
+	plt.subplot(len(Rat),1,Sample+1)
+	plt.scatter(range(MaximumAcini),MeVisLabVolume[Sample],c='r')
+	plt.scatter(range(MaximumAcini),AcinarVolume[Sample],c='b')
+	plt.legend(['MeVisLab','STEPanizer'])
+	plt.title(Beamtime[Sample]+WhichRat+Rat[Sample])
+	subplots_adjust(hspace=0.5)
+	
+
+plt.show()
+exit()
+
+# Boxplot of Volumes
+plt.figure(figsize=(16,9))
+subplots_adjust(hspace=0.01)
 for Sample in range(len(Rat)):
 	plot1 = plt.subplot(3,len(Rat),Sample+1)#,axisbg=color[Sample])
 	if Beamtime[Sample] != '':
@@ -166,6 +192,7 @@ for Sample in range(len(Rat)):
 plt.savefig('boxplot.png',transparent=False)
 plt.draw()
 
+# Plotting Volumes, Surface Density and Absolute Surfaces
 plt.figure(figsize=(16,9))
 for Sample in range(len(Rat)):
 	plot1 = plt.subplot(311)
@@ -176,7 +203,7 @@ for Sample in range(len(Rat)):
 	plot1 = plt.subplot(312)
 	if Beamtime[Sample] != '':
 		plt.scatter(range(MaximumAcini),SurfaceDensity[Sample],c=color[Sample])
-	plt.title('Surface Density (2 * Interceptions / Length)')
+	plt.title('Surface Density (2 * Int / Length)')
 	plt.xlim([0,MaximumAcini])
 	plot1 = plt.subplot(313)
 	if Beamtime[Sample] != '':
