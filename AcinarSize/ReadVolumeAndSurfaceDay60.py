@@ -1,3 +1,5 @@
+# -*- coding: utf8 -*-
+
 from pylab import *
 import os
 import glob
@@ -16,6 +18,7 @@ if os.path.exists(Drive) == False:
 
 chatty = False # set to 'False' to suppress some output.
 PlotTheData = True # True/False switches between showing and not showing the plots at the end
+SaveFigures = True # save the plot to .png-Files
 TikZTheData = True # save the data to .tikz-Files to import into LaTeX
 TOMCATVoxelSize = 1.48
 SliceNumber = 10
@@ -112,6 +115,7 @@ for Sample in range(len(Rat)):
 		MeanMeVisLabVolume[Sample] = np.mean(np.ma.masked_array(MeVisLabVolume[Sample],np.isnan(MeVisLabVolume[Sample])))
 		print WhichRat + Rat[Sample] + ':', MeanMeVisLabVolume[Sample], 'cm^3'
 print 'Mean acinar volume for all samples:', np.mean(np.ma.masked_array(MeanMeVisLabVolume,np.isnan(MeanMeVisLabVolume))), 'cm^3'
+print 'Standard deviation of the mean acinar volume for all samples:', np.std(np.ma.masked_array(MeanMeVisLabVolume,np.isnan(MeanMeVisLabVolume)))
 print '---'
 # <- MeVisLab
 
@@ -162,7 +166,7 @@ for Sample in range(len(Rat)):
 			#~ print 'Acinus',str(Acinus) + ':',Interceptions,'interceptions,',TestPoints,'points inside & area a(p) of',int(np.round(Area)),'um^2'
 			# Volume = AcinusTestPoints * Area * STEPanizerPixelSize * SliceNumber * TOMCATVoxelSize		
 			AcinarVolume[Sample][Acinus] = ((( AcinusTestPoints * Area * STEPanizerPixelSize * SliceNumber * TOMCATVoxelSize ) / ShrinkageFactor) / 1e12) # scaling volume to cm^3: http://is.gd/wbZ81O
-			#~ print 'The volume of acinus',Acinus,'is',AcinusTestPoints,'*',int(np.round(Area)),'*',STEPanizerPixelSize,'*',SliceNumber,'i.e.',int(AcinarVolume[Sample][Acinus]),'um^3'
+			#~ print 'The volume of acinus',Acinus,'is',AcinusTestPoints,'*',int(np.round(Area)),'*',STEPanizerPixelSize,'*',SliceNumber,'i.e.',int(AcinarVolume[Sample][Acinus]),'cm^3'
 								
 			# Total of all points = AllAreaTestPoints (in file) * Total of slices
 			TotalTestPoints[Sample][Acinus] = AllAreaTestPoints * TotalSlices
@@ -173,10 +177,10 @@ for Sample in range(len(Rat)):
 			
 			# Surface Density = 2 * Interceptions / Length
 			Length = LinePointLength * AcinusTestPoints # Linepointlength has to be calculated for the acinar reference space.
-			SurfaceDensity[Sample][Acinus] = 2 * Interceptions / Length
+			SurfaceDensity[Sample][Acinus] = 2 * Interceptions / Length # SurfaceDensity is [um^-1]
 			
-			# Absolute Surface = absolute Volume * Volume Density * Surface Density
-			AbsoluteSurface[Sample][Acinus] = SurfaceDensity[Sample][Acinus] * AcinarVolume[Sample][Acinus]
+			# Absolute Surface = Surface density * acinar volume
+			AbsoluteSurface[Sample][Acinus] = SurfaceDensity[Sample][Acinus] * AcinarVolume[Sample][Acinus] / 1e8 # normalizing to cm
 if ShrinkageFactor != 1:
 	print 'Calculated with a Shrinkagefactor of',ShrinkageFactor,'x'			
 print ''
@@ -191,6 +195,7 @@ for Sample in range(len(Rat)):
 		MeanAcinarVolume[Sample] = np.mean(np.ma.masked_array(AcinarVolume[Sample],np.isnan(AcinarVolume[Sample])))
 		print WhichRat + Rat[Sample] + ':', MeanAcinarVolume[Sample], 'cm^3'
 print 'Mean acinar volume for all samples:', np.mean(np.ma.masked_array(MeanAcinarVolume,np.isnan(MeanAcinarVolume))), 'cm^3'
+print 'Standard deviation of the mean acinar volume for all samples:', np.std(np.ma.masked_array(MeanAcinarVolume,np.isnan(MeanAcinarVolume)))
 print ''
 
 print 'Mean acinar surface for single samples'
@@ -200,8 +205,9 @@ for Sample in range(len(Rat)):
 		print WhichRat + Rat[Sample] + ': not measured'
 	else:
 		MeanAcinarSurface[Sample] = np.mean(np.ma.masked_array(AbsoluteSurface[Sample],np.isnan(AbsoluteSurface[Sample])))
-		print WhichRat + Rat[Sample] + ':', MeanAcinarSurface[Sample]/1e8, 'cm^2'		
-print 'Mean acinar surface for all samples:', np.mean(np.ma.masked_array(MeanAcinarSurface,np.isnan(MeanAcinarSurface)))/1e8, 'cm^2'
+		print WhichRat + Rat[Sample] + ':', MeanAcinarSurface[Sample], 'cm^2'		
+print 'Mean acinar surface for all samples:', np.mean(np.ma.masked_array(MeanAcinarSurface,np.isnan(MeanAcinarSurface))), 'cm^2'
+print 'Standard deviation of the mean acinar surface for all samples:', np.std(np.ma.masked_array(MeanAcinarSurface,np.isnan(MeanAcinarSurface)))
 print ''
 
 # Absolute parenchymal Volume / mean acinar volume = Number of Acini
@@ -226,7 +232,7 @@ for Sample in range(len(Rat)):
 	if Beamtime[Sample] == '':
 		print WhichRat + Rat[Sample] + ' was not measured'
 	else:
-		DiffusionSurface[Sample] = np.round(NumberOfAcini[Sample] * MeanAcinarSurface[Sample]/1e8,decimals=3)
+		DiffusionSurface[Sample] = np.round(NumberOfAcini[Sample] * MeanAcinarSurface[Sample],decimals=3)
 		print WhichRat + Rat[Sample],'contains',DiffusionSurface[Sample],'cm^2 of diffusion surface'
 print ''
 print 'Stefan measured the absolute airspace surface with EM and got'
@@ -247,7 +253,7 @@ for Sample in range(len(Rat)):
 			STEPanizerMeVisLabDifference[Sample][Acinus] = np.round((AcinarVolume[Sample][Acinus] / MeVisLabVolume[Sample][Acinus]),decimals=3)
 			print 'Acinus',str(Acinus) + ':',STEPanizerMeVisLabDifference[Sample][Acinus],'(STEPanizer/MeVisLab)'
 
-print 'In total, we assessed',TotalAssessedAcini,'acini (-> add to \\numberofacini in acinus.tex)'
+print 'In total, we assessed',TotalAssessedAcini,'acini (put into \\numberofacini at the beginning of acinus.tex)'
 print ''
 print ''
 print '              ALSO CALCULATE \\DIFFERENCE AND \\VOLUME, SO WE CAN COPY-PASTE IT'
@@ -258,6 +264,37 @@ if PlotTheData == False:
 if TikZTheData:
 	print "Using 'plt.plot' instead of 'plt.scatter', since 'tikz_save('file.tikz')' doesn't work otherwise"
 	print "just add 'only marks' to the TikZ-code (in the \\addplot-command)"
+
+# plot MeVisLabVolumes in one plot
+plt.figure()
+legend=[]
+for Sample in range(len(Rat)):
+	legend.append(WhichRat+Rat[Sample])
+	plt.plot(range(MaximumAcini*Sample,MaximumAcini*(Sample+1)),MeVisLabVolume[Sample],c=color[Sample])
+plt.title('MeVisLabVolume')
+plt.legend(legend)
+if SaveFigures:
+	plt.savefig('plot_mevisvolumes.png',transparent=False)
+if TikZTheData:
+	tikz_save('plot_mevisvolumes.tikz')
+
+# plot STEPanizerVolumes in one plot
+plt.figure()
+for Sample in range(len(Rat)):
+	plt.plot(range(MaximumAcini*Sample,MaximumAcini*(Sample+1)),AcinarVolume[Sample],c=color[Sample])
+plt.title('STEPanizerVolume')
+plt.legend(legend)
+if SaveFigures:
+	plt.savefig('plot_stepanizervolumes.png',transparent=False)
+if TikZTheData:
+	tikz_save('plot_stepanizervolumes.tikz')
+
+
+if SaveFigures:
+	plt.savefig('plot_mevis_vs_stepanizer_volumes.png',transparent=False)
+if TikZTheData:
+	tikz_save('plot_mevis_vs_stepanizer_volumes.tikz')
+
 		
 # Plot the interesting stuff
 # Plot MeVisLab- against STEPanizer-volumes
@@ -278,10 +315,11 @@ for Sample in range(len(Rat)):
 		plt.title('Volumes of acini of ' + Beamtime[Sample] + '\\' + WhichRat+Rat[Sample])
 	plt.xlim([0,MaximumAcini])
 plt.tight_layout()
-plt.draw()
-plt.savefig('plot_mevis_vs_stepanizer_volumes.png',transparent=False)
+if SaveFigures:
+	plt.savefig('plot_mevis_vs_stepanizer_volumes.png',transparent=False)
 if TikZTheData:
 	tikz_save('plot_mevis_vs_stepanizer_volumes.tikz')
+
 
 plt.figure(figsize=(16,9))
 for Sample in range(len(Rat)):
@@ -301,10 +339,10 @@ for Sample in range(len(Rat)):
 		plt.title(Beamtime[Sample] + '\\' + WhichRat + Rat[Sample] + '\nSTEPanizer/MeVisLab-Volume')
 	plt.xticks(locs)
 plt.tight_layout()
-plt.savefig('plot_mevis_vs_stepanizer_volumeratio.png',transparent=False)
+if SaveFigures:
+	plt.savefig('plot_mevis_vs_stepanizer_volumeratio.png',transparent=False)
 if TikZTheData:
 	tikz_save('plot_mevis_vs_stepanizer_volumeratio.tikz')
-plt.draw()
 
 # Boxplot of Volumes
 plt.figure(figsize=(16,9))
@@ -324,10 +362,10 @@ for Sample in range(len(Rat)):
 		plt.boxplot([x for x in AbsoluteSurface[Sample] if not math.isnan(x)],1) # http://is.gd/Ywxpiz remove all np.Nan for boxplotting
 	plt.ylabel('Absolute Surface')
 plt.tight_layout()
-plt.savefig('plot_boxplot_of_volumes.png',transparent=False)
+if SaveFigures:
+	plt.savefig('plot_boxplot_of_volumes.png',transparent=False)
 if TikZTheData:
 	tikz_save('plot_boxplot_of_volumes.tikz')
-plt.draw()
 
 # Plotting Volumes, Surface Density and Absolute Surfaces
 plt.figure(figsize=(16,9))
@@ -359,9 +397,9 @@ for Sample in range(len(Rat)):
 	plt.title('Absolute Surface (SurfaceDensity * AcinarVolume)')
 	plt.legend([Beamtime[1] + "\\" + WhichRat + Rat[1],Beamtime[3] + '\\' + WhichRat + Rat[3],Beamtime[4] + '\\' + WhichRat + Rat[4]],\
 		loc='upper center', bbox_to_anchor=(0.5, -0.1), ncol=3)
-plt.savefig('plot_acinarvolume_surfacedensity_absolutesurface.png',transparent=False)
+if SaveFigures:		
+	plt.savefig('plot_acinarvolume_surfacedensity_absolutesurface.png',transparent=False)
 if TikZTheData:
 	tikz_save('plot_acinarvolume_surfacedensity_absolutesurface.tikz')
-plt.draw()
 
 plt.show()
