@@ -101,9 +101,9 @@ for Sample in range(len(Rat)):
 		print 'Sample',Beamtime[Sample] + '\R108C60' + Rat[Sample] + ': Reading volumes from',len(glob.glob(os.path.join(SamplePath[Sample],'*.dcm'))),'.dcm-Files'
 		for CurrentFile in sorted(glob.glob(os.path.join(SamplePath[Sample],'*.dcm'))):
 			Acinus = int(CurrentFile[CurrentFile.find('acinus')+len('acinus'):CurrentFile.find('.volume')])
-			MeVisLabVolume[Sample][Acinus] = float(CurrentFile[CurrentFile.find('volume')+len('volume'):CurrentFile.find('.pixelsize')])/1000 # normalize ul to cm^3: http://is.gd/AbLosk
+			MeVisLabVolume[Sample][Acinus] = float(CurrentFile[CurrentFile.find('volume')+len('volume'):CurrentFile.find('.pixelsize')])/1000 # normalize ul to cm^3: http://is.gd/XxU3Ei
 			if chatty:
-				print 'MeVisLab-Volume of acinus',Acinus,'is',MeVisLabVolume[Sample][Acinus],'ul'
+				print 'MeVisLab-Volume of acinus',Acinus,'is',MeVisLabVolume[Sample][Acinus],'cm^3'
 print ''
 
 print 'Mean acinar volume'
@@ -161,12 +161,10 @@ for Sample in range(len(Rat)):
 					'|',AllAreaTestPoints,'test points per image',\
 					'|',"%04d" % (Interceptions),'Interceptions',\
 					'|',"%03d" % (AcinusTestPoints),'Points in Acinus',\
-					'|',"%03d" % (NParenchymalPoints),'Nonparenchymal Points'
+					'|',"%03d" % (NonParenchymalPoints[Sample][Acinus]),'Nonparenchymal Points'
 
-			#~ print 'Acinus',str(Acinus) + ':',Interceptions,'interceptions,',TestPoints,'points inside & area a(p) of',int(np.round(Area)),'um^2'
 			# Volume = AcinusTestPoints * Area * STEPanizerPixelSize * SliceNumber * TOMCATVoxelSize		
 			AcinarVolume[Sample][Acinus] = ((( AcinusTestPoints * Area * STEPanizerPixelSize * SliceNumber * TOMCATVoxelSize ) / ShrinkageFactor) / 1e12) # scaling volume to cm^3: http://is.gd/wbZ81O
-			#~ print 'The volume of acinus',Acinus,'is',AcinusTestPoints,'*',int(np.round(Area)),'*',STEPanizerPixelSize,'*',SliceNumber,'i.e.',int(AcinarVolume[Sample][Acinus]),'cm^3'
 								
 			# Total of all points = AllAreaTestPoints (in file) * Total of slices
 			TotalTestPoints[Sample][Acinus] = AllAreaTestPoints * TotalSlices
@@ -176,11 +174,11 @@ for Sample in range(len(Rat)):
 			ParenchymalVolume[Sample][Acinus] = ParenchymalPoints[Sample][Acinus] * Area * STEPanizerPixelSize * SliceNumber * TOMCATVoxelSize
 			
 			# Surface Density = 2 * Interceptions / Length
-			Length = LinePointLength * AcinusTestPoints # Linepointlength has to be calculated for the acinar reference space.
-			SurfaceDensity[Sample][Acinus] = 2 * Interceptions / Length # SurfaceDensity is [um^-1]
+			Length = ( LinePointLength * AcinusTestPoints ) / 1e4 # Linepointlength has to be calculated for the acinar reference space, /1e4 to scale from um to cm, http://is.gd/7wu1UD
+			SurfaceDensity[Sample][Acinus] = 2 * Interceptions / Length
 			
 			# Absolute Surface = Surface density * acinar volume
-			AbsoluteSurface[Sample][Acinus] = SurfaceDensity[Sample][Acinus] * AcinarVolume[Sample][Acinus] / 1e8 # normalizing to cm
+			AbsoluteSurface[Sample][Acinus] = SurfaceDensity[Sample][Acinus] * AcinarVolume[Sample][Acinus]
 if ShrinkageFactor != 1:
 	print 'Calculated with a Shrinkagefactor of',ShrinkageFactor,'x'			
 print ''
@@ -193,8 +191,8 @@ for Sample in range(len(Rat)):
 		print WhichRat + Rat[Sample] + ': not measured'
 	else:
 		MeanAcinarVolume[Sample] = np.mean(np.ma.masked_array(AcinarVolume[Sample],np.isnan(AcinarVolume[Sample])))
-		print WhichRat + Rat[Sample] + ':', MeanAcinarVolume[Sample], 'cm^3'
-print 'Mean acinar volume for all samples:', np.mean(np.ma.masked_array(MeanAcinarVolume,np.isnan(MeanAcinarVolume))), 'cm^3'
+		print WhichRat + Rat[Sample] + ':', np.round(MeanAcinarVolume[Sample],decimals=3), 'cm^3'
+print 'Mean acinar volume for all samples:', np.round(np.mean(np.ma.masked_array(MeanAcinarVolume,np.isnan(MeanAcinarVolume))),decimals=3), 'cm^3'
 print 'Standard deviation of the mean acinar volume for all samples:', np.std(np.ma.masked_array(MeanAcinarVolume,np.isnan(MeanAcinarVolume)))
 print ''
 
@@ -205,21 +203,20 @@ for Sample in range(len(Rat)):
 		print WhichRat + Rat[Sample] + ': not measured'
 	else:
 		MeanAcinarSurface[Sample] = np.mean(np.ma.masked_array(AbsoluteSurface[Sample],np.isnan(AbsoluteSurface[Sample])))
-		print WhichRat + Rat[Sample] + ':', MeanAcinarSurface[Sample], 'cm^2'		
-print 'Mean acinar surface for all samples:', np.mean(np.ma.masked_array(MeanAcinarSurface,np.isnan(MeanAcinarSurface))), 'cm^2'
+		print WhichRat + Rat[Sample] + ':', np.round(MeanAcinarSurface[Sample],decimals=3), 'cm^2'		
+print 'Mean acinar surface for all samples:',np.round(np.mean(np.ma.masked_array(MeanAcinarSurface,np.isnan(MeanAcinarSurface))),decimals=3), 'cm^2'
 print 'Standard deviation of the mean acinar surface for all samples:', np.std(np.ma.masked_array(MeanAcinarSurface,np.isnan(MeanAcinarSurface)))
 print ''
 
 # Absolute parenchymal Volume / mean acinar volume = Number of Acini
-print 'Number of acini (= absolute parenchymal volume from stefan / mean acinar volume)'
+print 'Number of acini (= absolute airspace volume from stefan / mean acinar volume)'
 NumberOfAcini = [np.nan for Sample in range(len(Rat))]
 for Sample in range(len(Rat)):
 	if Beamtime[Sample] == '':
 		print WhichRat + Rat[Sample] + ' was not measured'
 	else:
-		# nicht mehr absolute parenchymal, sondern absolute airspace volume
-		NumberOfAcini[Sample] = int(np.round(AbsoluteAirspaceVolume[Sample] / (MeanAcinarVolume[Sample])))
-		print WhichRat + Rat[Sample],'contains',NumberOfAcini[Sample],'acini'
+		NumberOfAcini[Sample] = AbsoluteAirspaceVolume[Sample] / (MeanAcinarVolume[Sample])
+		print WhichRat + Rat[Sample],'contains',int(np.round(NumberOfAcini[Sample])),'acini'
 print ''		
 print 'Rodriguez1987 (page 146) states a total of 4023 acini for the whole rat lungs.'
 print 'We have a *mean* of',int(np.round(np.mean(np.ma.masked_array(NumberOfAcini,np.isnan(NumberOfAcini))))),'acini calculated for the whole lung.'
@@ -232,9 +229,10 @@ for Sample in range(len(Rat)):
 	if Beamtime[Sample] == '':
 		print WhichRat + Rat[Sample] + ' was not measured'
 	else:
-		DiffusionSurface[Sample] = np.round(NumberOfAcini[Sample] * MeanAcinarSurface[Sample],decimals=3)
-		print WhichRat + Rat[Sample],'contains',DiffusionSurface[Sample],'cm^2 of diffusion surface'
+		DiffusionSurface[Sample] = NumberOfAcini[Sample] * MeanAcinarSurface[Sample]
+		print WhichRat + Rat[Sample],'contains',np.round(DiffusionSurface[Sample],decimals=3),'cm^2 of diffusion surface'
 print ''
+
 print 'Stefan measured the absolute airspace surface with EM and got'
 for Sample in range(len(Rat)):
 	print WhichRat + Rat[Sample] +':',np.round(AbsoluteAirspaceSurface[Sample],decimals=3),'cm^2'
@@ -244,19 +242,30 @@ print 'Our mean airspace surface is',np.round(np.mean(np.ma.masked_array(Diffusi
 #~ # <- STEPanizer
 
 print ''
-print 'MeVisLab volume compared to STEPanizer volume'
+print 'MeVisLab volume compared to STEPanizer volume (STEPanizer/MeVisLab)'
 STEPanizerMeVisLabDifference = [[np.nan for Acinus in range(MaximumAcini)] for Sample in range(len(Rat))]
 for Sample in range(len(Rat)):
-	print WhichRat + Rat[Sample]
-	for Acinus in range(MaximumAcini):
-		if isnan(MeVisLabVolume[Sample][Acinus]) == False:
-			STEPanizerMeVisLabDifference[Sample][Acinus] = np.round((AcinarVolume[Sample][Acinus] / MeVisLabVolume[Sample][Acinus]),decimals=3)
-			print 'Acinus',str(Acinus) + ':',STEPanizerMeVisLabDifference[Sample][Acinus],'(STEPanizer/MeVisLab)'
+	if Beamtime[Sample] != '':
+		for Acinus in range(MaximumAcini):
+			if isnan(MeVisLabVolume[Sample][Acinus]) == False:
+				STEPanizerMeVisLabDifference[Sample][Acinus] = np.round((AcinarVolume[Sample][Acinus] / MeVisLabVolume[Sample][Acinus]),decimals=3)
+				if chatty:
+					print WhichRat + Rat[Sample],'Acinus',str(Acinus) + ':',STEPanizerMeVisLabDifference[Sample][Acinus]
+		if chatty:
+			print '(a mean of',np.round(np.mean(np.ma.masked_array(STEPanizerMeVisLabDifference[Sample],np.isnan(STEPanizerMeVisLabDifference[Sample]))),decimals=3),')'
+	else:
+		if chatty:
+			print WhichRat + Rat[Sample],'was not measured'
+	
+print 'In mean, (STEPanizer-/MeVisLab-volume) is',np.round(np.mean(np.ma.masked_array(STEPanizerMeVisLabDifference,np.isnan(STEPanizerMeVisLabDifference))),decimals=3)
 
-print 'In total, we assessed',TotalAssessedAcini,'acini (put into \\numberofacini at the beginning of acinus.tex)'
 print ''
-print ''
-print '              ALSO CALCULATE \\DIFFERENCE AND \\VOLUME, SO WE CAN COPY-PASTE IT'
+print 'Values for acinus.tex:'
+print 'add to preamble around line 76.'
+print '\\newcommand{\\numberofacini}{' + str(TotalAssessedAcini) + '}'
+print '\\newcommand{\\volume}{' + str(np.mean(np.ma.masked_array(MeanAcinarVolume,np.isnan(MeanAcinarVolume)))) + '} % cm^3, (mean acinar volume)'
+print '\\newcommand{\std}{' + str(np.std(np.ma.masked_array(MeanAcinarVolume,np.isnan(MeanAcinarVolume)))) + '} % (Standard deviation of acinar volumes)'
+print '\\newcommand{\difference}{' + str(+np.mean(np.ma.masked_array(STEPanizerMeVisLabDifference,np.isnan(STEPanizerMeVisLabDifference)))) + '} % X times bigger (acinar volumes STEPanizer/MeVisLab-volumes)'
 
 if PlotTheData == False:
 	exit()
@@ -288,12 +297,6 @@ if SaveFigures:
 	plt.savefig('plot_stepanizervolumes.png',transparent=False)
 if TikZTheData:
 	tikz_save('plot_stepanizervolumes.tikz')
-
-
-if SaveFigures:
-	plt.savefig('plot_mevis_vs_stepanizer_volumes.png',transparent=False)
-if TikZTheData:
-	tikz_save('plot_mevis_vs_stepanizer_volumes.tikz')
 
 		
 # Plot the interesting stuff
