@@ -7,6 +7,7 @@ import csv
 import numpy as np
 import xlrd # from http://www.lexicon.net/sjmachin/xlrd.htm, to read XLS-Files (like the ones containing the lung volumes)
 from matplotlib2tikz import save as tikz_save
+import time
 
 print "Hey ho, let's go"
 
@@ -16,15 +17,18 @@ if os.path.exists(Drive) == False:
 	print 'Cannot read ' + str(Drive) + '. Exiting!'
 	exit()
 
-chatty = False # set to 'False' to suppress some output.
+chatty = True # set to 'False' to suppress some output.
 PlotTheData = True # True/False switches between showing and not showing the plots at the end
-SaveFigures = True # save the plot to .png-Files
-TikZTheData = True # save the data to .tikz-Files to import into LaTeX
+SaveFigures = False # save the plot to .png-Files
+TikZTheData = False # save the data to .tikz-Files to import into LaTeX
 TOMCATVoxelSize = 1.48
 SliceNumber = 10
+DisectorThickness = 5 # sklices
 ShrinkageFactor = 0.6
 color=['c','r','m','b','y'] # colors for Volumeplots
-STEPanizerDir = 'voxelsize'+str(TOMCATVoxelSize)+'-every'+str(SliceNumber)+'slice'
+STEPanizerVolumeDir = 'voxelsize'+str(TOMCATVoxelSize)+'-every'+str(SliceNumber)+'slice'
+STEPanizerAlveoliDir = 'voxelsize'+str(TOMCATVoxelSize)+'-every'+str(SliceNumber)+'slice-DisectorThickness-' + str('%.2f' % round(DisectorThickness*TOMCATVoxelSize,2)) + 'um-or' + str(DisectorThickness) + 'slices'
+
 print 'Calculating with a Shrinkagefactor of',str(ShrinkageFactor) +'x'
 print '---'
 
@@ -71,30 +75,56 @@ AssessedAcini = [np.nan for Sample in range(len(Rat))]
 for Sample in range(len(Rat)):
 	SamplePath[Sample] = os.path.join(Drive,Beamtime[Sample],WhichRat + Rat[Sample])
 	if os.path.exists(SamplePath[Sample]):
-		AssessedAcini[Sample] = len(glob.glob(os.path.join(SamplePath[Sample],'acin*',STEPanizerDir)))
+		AssessedAcini[Sample] = len(glob.glob(os.path.join(SamplePath[Sample],'acin*',STEPanizerVolumeDir)))
 		print SamplePath[Sample],'exists and contains',AssessedAcini[Sample],'directories with images generated for STEPanizering'
 	else:
 		print SamplePath[Sample],'does not exist, we probably did not scan this rat.'
 
 # Generating a list of the .csv filenames
-CSVFile = [glob.glob(os.path.join(SamplePath[Sample],'acin*',STEPanizerDir,'*.xls')) for Sample in range(len(Rat))]	
+CSVFileVolume = [glob.glob(os.path.join(SamplePath[Sample],'acin*',STEPanizerVolumeDir,'*.xls')) for Sample in range(len(Rat))]	
+CSVFileAlveoli = [glob.glob(os.path.join(SamplePath[Sample],'acin*',STEPanizerAlveoliDir,'*.xls')) for Sample in range(len(Rat))]	
 print '---'
 
 # See for which Rat we counted the most acini. We need this for scaling the plots and pre-allocating empty variables
-ListOfAcini=[]
+ListOfAciniVolume=[]
+ListOfAciniAlveoli=[]
+MaximumAcini=[]
+TotalAssessedAcini=[]
 for Sample in range(len(Rat)):
-	for CurrentFile in CSVFile[Sample][:]:
+	for CurrentFile in CSVFileVolume[Sample][:]:
 		CurrentAcinusNumber = int(CurrentFile[CurrentFile.find('acinus')+len('acinus'):CurrentFile.find('acinus')+len('acinus')+2])
-		ListOfAcini.append(CurrentAcinusNumber)
-MaximumAcini = max(ListOfAcini) + 1
-TotalAssessedAcini = len(ListOfAcini)
+		ListOfAciniVolume.append(CurrentAcinusNumber)
+	for CurrentFile in CSVFileVolume[Sample][:]:
+		CurrentAcinusNumber = int(CurrentFile[CurrentFile.find('acinus')+len('acinus'):CurrentFile.find('acinus')+len('acinus')+2])
+		ListOfAciniAlveoli.append(CurrentAcinusNumber)
+MaximumAcini.append(max(ListOfAciniVolume) + 1)
+MaximumAcini.append(max(ListOfAciniAlveoli) + 1)
+TotalAssessedAcini.append(len(ListOfAciniVolume))
+TotalAssessedAcini.append(len(ListOfAciniAlveoli))
+
+if TotalAssessedAcini[0] != TotalAssessedAcini[1]:
+	print 'Total number of assessed acini for volume (',TotalAssessedAcini[0],') and alveoli (',TotalAssessedAcini[1],') does not match!'
+	print 'Print see what is wrong and restart'
+	sys.exit()
+else:
+	tmp = TotalAssessedAcini[0]
+	TotalAssessedAcini = None
+	TotalAssessedAcini = tmp
+		
+if MaximumAcini[0] != MaximumAcini[1]:
+	print 'Maximum number of assessed acini for volume (',MaximumAcini[0],') and alveoli (',MaximumAcini[1],') does not match!'
+	print 'Print see what is wrong and restart'
+	sys.exit()
+else:
+	tmp = MaximumAcini[0]
+	MaximumAcini = None
+	MaximumAcini = tmp
 
 # MeVisLab ->
 # Read Volumes from .dcm-Files generated with MeVisLab
 print 'MeVisLab'
 print 'Extracting acinar volumes from .dcm-Filenames written with MeVisLab'
 MeVisLabVolume = [[np.nan for Acinus in range(MaximumAcini)] for Sample in range(len(Rat))]
-
 for Sample in range(len(Rat)):
 	if Beamtime[Sample] == '':
 		print 'Sample',WhichRat + Rat[Sample] + ': not measured'
@@ -121,7 +151,7 @@ print '---'
 # <- MeVisLab
 
 # STEPanizer ->
-print 'STEPanizer'
+print 'STEPanizer: Volume'
 # Read data from each STEPanizer .csv-file and calculate the desired values
 AcinarVolume = [[np.nan for Acinus in range(MaximumAcini)] for Sample in range(len(Rat))]
 SurfaceDensity = [[np.nan for Acinus in range(MaximumAcini)] for Sample in range(len(Rat))]
@@ -134,10 +164,10 @@ for Sample in range(len(Rat)):
 	if Beamtime[Sample] == '':
 		print 'Sample',WhichRat + Rat[Sample] + ': not measured'
 	else:
-		print 'Sample',Beamtime[Sample] + '\R108C60' + Rat[Sample] + ': Reading and calculating',len(glob.glob(os.path.join(SamplePath[Sample],'acin*',STEPanizerDir))),'sets of values'
-		for CurrentFile in sorted(CSVFile[Sample][:]):
+		print 'Sample',Beamtime[Sample] + '\R108C60' + Rat[Sample] + ': Reading and calculating',len(glob.glob(os.path.join(SamplePath[Sample],'acin*',STEPanizerVolumeDir))),'sets of values'
+		for CurrentFile in sorted(CSVFileVolume[Sample][:]):
 			Acinus = int(CurrentFile[CurrentFile.find('acinus')+len('acinus'):CurrentFile.find('acinus')+len('acinus')+2])
-			TotalSlices = len(glob.glob(os.path.join((os.path.join(SamplePath[Sample],'acinus'+ str("%02d" % (Acinus)),STEPanizerDir)),'*.jpg')))
+			TotalSlices = len(glob.glob(os.path.join((os.path.join(SamplePath[Sample],'acinus'+ str("%02d" % (Acinus)),STEPanizerVolumeDir)),'*.jpg')))
 			FileData = csv.reader(open(CurrentFile,'rb'),dialect=csv.excel_tab)
 			for line in FileData:
 				if len(line) > 0:
@@ -148,34 +178,34 @@ for Sample in range(len(Rat)):
 					if line[1] == 'Non-Parenchymal Points':
 						NonParenchymalPoints[Sample][Acinus] = int(line[3])
 					if line[0] == 'Pixel size:':
-						STEPanizerPixelSize = double(line[1])
+						STEPanizerPixelSize_Vol = double(line[1])
 					if line[0] == 'a(p):':
-						Area = double(line[1])*STEPanizerPixelSize**2
+						Area_Vol = double(line[1])*STEPanizerPixelSize_Vol**2
 					if line[0] == 'l(p):':
-						LinePointLength = double(line[1])*STEPanizerPixelSize
+						LinePointLength_Vol = double(line[1])*STEPanizerPixelSize_Vol
 					if line[0] == 'Number of test points:':
-						AllAreaTestPoints = int(line[1])
+						AllAreaTestPoints_Vol = int(line[1])
 			# Give out counted/assessed data if desired
 			if chatty:
-				print 'Acinus', "%02d" % (Acinus,),\
+				print 'Acinus', "%02d" % (Acinus),\
 					'|',"%03d" % (TotalSlices),'Files',\
-					'|',AllAreaTestPoints,'test points per image',\
+					'|',AllAreaTestPoints_Vol,'test point(s) per image',\
 					'|',"%04d" % (Interceptions),'Interceptions',\
 					'|',"%03d" % (AcinusTestPoints),'Points in Acinus',\
 					'|',"%03d" % (NonParenchymalPoints[Sample][Acinus]),'Nonparenchymal Points'
 
-			# Volume = AcinusTestPoints * Area * STEPanizerPixelSize * SliceNumber * TOMCATVoxelSize		
-			AcinarVolume[Sample][Acinus] = ((( AcinusTestPoints * Area * STEPanizerPixelSize * SliceNumber * TOMCATVoxelSize ) / ShrinkageFactor) / 1e12) # scaling volume to cm^3: http://is.gd/wbZ81O
+			# Volume = AcinusTestPoints * Area_Vol * STEPanizerPixelSize_Vol * SliceNumber * TOMCATVoxelSize		
+			AcinarVolume[Sample][Acinus] = ((( AcinusTestPoints * Area_Vol * STEPanizerPixelSize_Vol * SliceNumber * TOMCATVoxelSize ) / ShrinkageFactor) / 1e12) # scaling volume to cm^3: http://is.gd/wbZ81O
 								
-			# Total of all points = AllAreaTestPoints (in file) * Total of slices
-			TotalTestPoints[Sample][Acinus] = AllAreaTestPoints * TotalSlices
+			# Total of all points = AllAreaTestPoints_Vol (in file) * Total of slices
+			TotalTestPoints[Sample][Acinus] = AllAreaTestPoints_Vol * TotalSlices
 			
-			# Parenchym-Volume = Parenchymal points * Area * STEPanizerPixelSize * SliceNumber * TOMCATVoxelSize. Parenchymal points are total points minus NParenchymalpoints (which are all points outside the sample and in non-parenchyma)
+			# Parenchym-Volume = Parenchymal points * Area_Vol * STEPanizerPixelSize_Vol * SliceNumber * TOMCATVoxelSize. Parenchymal points are total points minus NParenchymalpoints (which are all points outside the sample and in non-parenchyma)
 			ParenchymalPoints[Sample][Acinus] = TotalTestPoints[Sample][Acinus] - NonParenchymalPoints[Sample][Acinus]
-			ParenchymalVolume[Sample][Acinus] = ParenchymalPoints[Sample][Acinus] * Area * STEPanizerPixelSize * SliceNumber * TOMCATVoxelSize
+			ParenchymalVolume[Sample][Acinus] = ParenchymalPoints[Sample][Acinus] * Area_Vol * STEPanizerPixelSize_Vol * SliceNumber * TOMCATVoxelSize
 			
 			# Surface Density = 2 * Interceptions / Length
-			Length = ( LinePointLength * AcinusTestPoints ) / 1e4 # Linepointlength has to be calculated for the acinar reference space, /1e4 to scale from um to cm, http://is.gd/7wu1UD
+			Length = ( LinePointLength_Vol * AcinusTestPoints ) / 1e4 # Linepointlength has to be calculated for the acinar reference space, /1e4 to scale from um to cm, http://is.gd/7wu1UD
 			SurfaceDensity[Sample][Acinus] = 2 * Interceptions / Length
 			
 			# Absolute Surface = Surface density * acinar volume
@@ -183,6 +213,71 @@ for Sample in range(len(Rat)):
 if ShrinkageFactor != 1:
 	print 'Calculated with a Shrinkagefactor of',ShrinkageFactor,'x'			
 print ''
+
+print 'STEPanizer: Alveoli'
+# Read data from each STEPanizer .csv-file and calculate the desired values
+Bridges = [[np.nan for Acinus in range(MaximumAcini)] for Sample in range(len(Rat))]
+for Sample in range(len(Rat)):
+	if Beamtime[Sample] == '':
+		print 'Sample',WhichRat + Rat[Sample] + ': not measured'
+	else:
+		print 'Sample',Beamtime[Sample] + '\R108C60' + Rat[Sample] + ': Reading and calculating',len(glob.glob(os.path.join(SamplePath[Sample],'acin*',STEPanizerAlveoliDir))),'sets of values'
+		for CurrentFile in sorted(CSVFileAlveoli[Sample][:]):
+			Acinus = int(CurrentFile[CurrentFile.find('acinus')+len('acinus'):CurrentFile.find('acinus')+len('acinus')+2])
+			TotalSlices = len(glob.glob(os.path.join((os.path.join(SamplePath[Sample],'acinus'+ str("%02d" % (Acinus)),STEPanizerAlveoliDir)),'*.jpg')))
+			FileData = csv.reader(open(CurrentFile,'rb'),dialect=csv.excel_tab)
+			for line in FileData:
+				if len(line) > 0:
+					if line[0] == 'Num 1':
+						Counts = int(line[3])
+					if line[0] == 'Pixel size:':
+						STEPanizerPixelSize_Acini = double(line[1])
+					if line[0] == 'a(p):':
+						Area_Acini = double(line[1])*STEPanizerPixelSize_Vol**2
+					if line[0] == 'l(p):':
+						LinePointLength_Alveoli = double(line[1])*STEPanizerPixelSize_Vol
+					if line[0] == 'Number of test points:':
+						AllAreaTestPoints_Alveoli = int(line[1])						
+			# Give out counted/assessed data if desired
+			if chatty:
+				print 'Acinus ' + str("%02d" % (Acinus)) +\
+					' | ' + str("%03d" % (TotalSlices)) + ' Files' +\
+					' | ' + str(AllAreaTestPoints_Alveoli) + ' test point(s) per image' +\
+					' | ' + str(Counts) + ' counts'
+			
+			# Bridges = Something to do with the Counts
+			Bridges[Sample][Acinus] = Counts
+
+if ShrinkageFactor != 1:
+	print 'Calculated with a Shrinkagefactor of',ShrinkageFactor,'x'			
+print ''
+
+plt.figure()
+for Sample in range(len(Rat)):
+	plt.subplot(len(Rat),1,Sample+1)
+	plt.scatter(range(MaximumAcini),Bridges[Sample],c='r')
+	plt.scatter(range(MaximumAcini),AcinarVolume[Sample],c='b')
+	plt.title('Counted Bridges')
+	plt.legend(['Bridges (Evelyne) ','Volume (David)'])
+	
+plt.show()	
+sys.exit()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # Give out interesting values
 print 'Mean acinar volume for single samples'
@@ -448,7 +543,7 @@ for Sample in range(len(Rat)):
 			plt.plot(range(MaximumAcini),AcinarVolume[Sample],c=color[Sample])
 		else:
 			plt.scatter(range(MaximumAcini),AcinarVolume[Sample],c=color[Sample])
-	plt.title('Volume (AcinusTestPoints * Area * STEPanizerPixelSize * SliceNumber * TOMCATVoxelSize)')
+	plt.title('Volume (AcinusTestPoints * Area * STEPanizerPixelSize_Vol * SliceNumber * TOMCATVoxelSize)')
 	plt.subplot(312)
 	plt.xlim([0,MaximumAcini])
 	if Beamtime[Sample] != '':
