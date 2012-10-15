@@ -236,13 +236,10 @@ for Sample in range(len(Rat)):
 						Area_Acini = double(line[1])*STEPanizerPixelSize_Vol**2
 					if line[0] == 'l(p):':
 						LinePointLength_Alveoli = double(line[1])*STEPanizerPixelSize_Vol
-					if line[0] == 'Number of test points:':
-						AllAreaTestPoints_Alveoli = int(line[1])						
 			# Give out counted/assessed data if desired
 			if chatty:
 				print 'Acinus ' + str("%02d" % (Acinus)) +\
 					' | ' + str("%03d" % (TotalSlices)) + ' Files' +\
-					' | ' + str(AllAreaTestPoints_Alveoli) + ' test point(s) per image' +\
 					' | ' + str(Counts) + ' counts'
 			
 			# Bridges = Something to do with the Counts
@@ -253,19 +250,20 @@ if ShrinkageFactor != 1:
 print ''
 
 plt.figure()
+plt.subplots_adjust(hspace=1)
 for Sample in range(len(Rat)):
 	plt.subplot(len(Rat),1,Sample+1)
 	plt.scatter(range(MaximumAcini),Bridges[Sample],c='r')
 	plt.scatter(range(MaximumAcini),AcinarVolume[Sample],c='b')
-	plt.title('Counted Bridges')
-	plt.legend(['Bridges (Evelyne) ','Volume (David)'])
+	plt.title('Bridges ' + WhichRat + Rat[Sample] +': ' +\
+		str(np.sum(np.ma.masked_array(Bridges[Sample],np.isnan(Bridges[Sample])))) +\
+		' (total)')
+	plt.legend(['Bridges (counted by Evelyne) ','Volume (assessed by David)'],loc='center left', bbox_to_anchor=(1, 0.5))
 	
-plt.show()	
+print '________________________________________________________________________________'
+
+plt.show()
 sys.exit()
-
-
-
-
 
 
 
