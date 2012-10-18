@@ -9,6 +9,11 @@ import xlrd # from http://www.lexicon.net/sjmachin/xlrd.htm, to read XLS-Files (
 from matplotlib2tikz import save as tikz_save
 import time
 
+def tellme(s):
+    print s
+    plt.title(s,fontsize=16)
+    plt.draw()
+
 print "Hey ho, let's go"
 
 Drive = 'R:\SLS'
@@ -354,14 +359,16 @@ PlotNormalizedSTEPanizerVolume = [float(i)/max(PlotSTEPAnizerVolume) for i in Pl
 plt.figure(num=None,figsize=(16,9))
 # plot MeVisLabVolumes
 plt.subplot(221)
-# Set a counter, so we can iterate through the number of Assessedacini for plotting.
-# For each plot, we would like to plot from AssessedAcini[Sample-1]:AssesseAcini[Sample],
-# but this does not work, since the array has only a length of 5. We thus
-# accumulate the value with "counter = counter + AssessedAcini[Sample]" and use this for plotting
-counter = 0
+# Using the sum of the AssessedAcini as below, we can set the correct
+# "distance" for the plots
+#~ ---
+#~ for Sample in range(len(Rat)):
+	#~ print 'Sample',Sample,'from',int(sum(AssessedAcini[:Sample])),'to',int(sum(AssessedAcini[:Sample+1]))
+#~ ---
 for Sample in range(len(Rat)):
-	plt.plot(range(counter,counter+AssessedAcini[Sample]),PlotMeVisLabVolume[counter:counter+AssessedAcini[Sample]],c=color[Sample])
-	counter = counter + AssessedAcini[Sample]
+	plt.plot(\
+		range(int(sum(AssessedAcini[:Sample])),int(sum(AssessedAcini[:Sample+1]))),\
+		PlotMeVisLabVolume[int(sum(AssessedAcini[:Sample])):int(sum(AssessedAcini[:Sample+1]))],c=color[Sample])
 plt.ylabel('Volume [cm^3]')
 plt.xlabel('Acinus')
 plt.legend([WhichRat+Rat[1],WhichRat+Rat[3],WhichRat+Rat[4]],loc='best')
@@ -369,10 +376,9 @@ plt.title('MeVisLabVolume')
 plt.xticks(arange(TotalAssessedAcini))
 # plot STEPanizerVolumes
 plt.subplot(222)
-counter = 0
 for Sample in range(len(Rat)):
-	plt.plot(range(counter,counter+AssessedAcini[Sample]),PlotSTEPAnizerVolume[counter:counter+AssessedAcini[Sample]],c=color[Sample])
-	counter = counter + AssessedAcini[Sample]
+	plt.plot(range(int(sum(AssessedAcini[:Sample])),int(sum(AssessedAcini[:Sample+1]))),\
+		PlotSTEPAnizerVolume[int(sum(AssessedAcini[:Sample])):int(sum(AssessedAcini[:Sample+1]))],c=color[Sample])	
 plt.ylabel('Volume [cm^3]')
 plt.xlabel('Acinus')
 plt.legend([WhichRat+Rat[1],WhichRat+Rat[3],WhichRat+Rat[4]],loc='best')
@@ -380,10 +386,9 @@ plt.title('STEPanizerVolumes')
 plt.xticks(arange(TotalAssessedAcini))
 # plot NORMALIZED MeVisLabVolumes
 plt.subplot(223)
-counter = 0
 for Sample in range(len(Rat)):
-	plt.plot(range(counter,counter+AssessedAcini[Sample]),PlotNormalizedMeVisLabVolume[counter:counter+AssessedAcini[Sample]],c=color[Sample])
-	counter = counter + AssessedAcini[Sample]
+	plt.plot(range(int(sum(AssessedAcini[:Sample])),int(sum(AssessedAcini[:Sample+1]))),\
+		PlotNormalizedMeVisLabVolume[int(sum(AssessedAcini[:Sample])):int(sum(AssessedAcini[:Sample+1]))],c=color[Sample])	
 plt.ylabel('Normalized Volume')
 plt.xlabel('Acinus')
 plt.legend([WhichRat+Rat[1],WhichRat+Rat[3],WhichRat+Rat[4]],loc='best')
@@ -391,10 +396,9 @@ plt.title('NORMALIZED MeVisLabVolume')
 plt.xticks(arange(TotalAssessedAcini))
 # plot NORMALIZED STEPanizerVolumes without NaNs
 plt.subplot(224)
-counter = 0
 for Sample in range(len(Rat)):
-	plt.plot(range(counter,counter+AssessedAcini[Sample]),PlotNormalizedSTEPanizerVolume[counter:counter+AssessedAcini[Sample]],c=color[Sample])
-	counter = counter + AssessedAcini[Sample]
+	plt.plot(range(int(sum(AssessedAcini[:Sample])),int(sum(AssessedAcini[:Sample+1]))),\
+		PlotNormalizedSTEPanizerVolume[int(sum(AssessedAcini[:Sample])):int(sum(AssessedAcini[:Sample+1]))],c=color[Sample])
 plt.ylabel('Normalized Volume')
 plt.xlabel('Acinus')
 plt.legend([WhichRat+Rat[1],WhichRat+Rat[3],WhichRat+Rat[4]],loc='best')
@@ -429,7 +433,57 @@ if SaveFigures:
 	plt.savefig('plot_stepanizervolumes.png',transparent=False)
 if TikZTheData:
 	tikz_save('plot_stepanizervolumes.tikz')
-			
+	
+# plot both MeVisLab- and STEPanizer-Volumes in one plot
+plt.figure(num=None,figsize=(16,9))
+for Sample in range(len(Rat)):
+	plt.plot(range(MaximumAcini*Sample,MaximumAcini*(Sample+1)),MeVisLabVolume[Sample],color[Sample]+'--',marker='*')
+	plt.plot(range(MaximumAcini*Sample,MaximumAcini*(Sample+1)),AcinarVolume[Sample],color[Sample],marker='o')
+	#~ plt.ylim([0,max(max(max(MeVisLabVolume)),max(max(AcinarVolume)))])
+plt.title('Volumes')
+plt.legend(['MeVisLab','STEPanizer'],loc='best')
+if SaveFigures:
+	plt.savefig('plot_stepanizervolumes.png',transparent=False)
+if TikZTheData:
+	tikz_save('plot_stepanizervolumes.tikz')	
+	
+import win32api
+win32api.MessageBox(0, 'Select one Acinus, I will then show you a slice of this one...', 'Acinus Selection', 0x00001000)
+tellme('Select acinus to look at a slice\nStop with middle mouse button')
+
+AcinusToLookAt = int(round(plt.ginput(1,timeout=0)[0][0]))
+
+for Sample in range(len(Rat)):
+	if (AcinusToLookAt >= MaximumAcini*Sample) and (AcinusToLookAt < MaximumAcini*(Sample+1)):
+		print 'The selected Acinus',AcinusToLookAt,'corresponds to acinus',AcinusToLookAt-MaximumAcini*Sample,'of sample',WhichRat+Rat[Sample]
+		print 'This acinus can be found in',os.path.dirname(CSVFileVolume[Sample][AcinusToLookAt-MaximumAcini*Sample])
+		print 'Which contains',len(glob.glob(os.path.join(os.path.dirname(CSVFileVolume[Sample][AcinusToLookAt-MaximumAcini*Sample]),'*.jpg'))),\
+			'.jpg files'
+		print 'We are opening',WhichRat + Rat[Sample] + '-acinusXXXXX_' +\
+			str(int(len(glob.glob(os.path.join(os.path.dirname(CSVFileVolume[Sample][AcinusToLookAt-MaximumAcini*Sample]),'*.jpg')))/2)) +\
+			'.jpg'
+
+exit()
+print '________________________________________________________________________________'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # Plot the interesting stuff
 # Plot MeVisLab- against STEPanizer-volumes
 plt.figure(num=None,figsize=(16,9))
@@ -511,7 +565,7 @@ for Sample in range(len(Rat)):
 			plt.scatter(range(MaximumAcini),AcinarVolume[Sample],c=color[Sample])
 	plt.title('Volume (AcinusTestPoints * Area * STEPanizerPixelSize_Vol * SliceNumber * TOMCATVoxelSize)')
 	plt.xlim([0,MaximumAcini])
-	plt.ylim([0,None])
+	plt.ylim([0,max(max(AcinarVolume))])
 	plt.subplot(312)
 	plt.xlim([0,MaximumAcini])
 	if Beamtime[Sample] != '':
@@ -537,16 +591,6 @@ if SaveFigures:
 	plt.savefig('plot_acinarvolume_surfacedensity_absolutesurface.png',transparent=False)
 if TikZTheData:
 	tikz_save('plot_acinarvolume_surfacedensity_absolutesurface.tikz')
-	
-	
-plt.show()
-exit()	
-
-
-
-
-
-	
 
 # Plot Bridges vs. Volume (Evelyne vs. David)
 plt.figure(num=None,figsize=(16,9))
