@@ -307,7 +307,9 @@ for Sample in range(len(Rat)):
 	print WhichRat + Rat[Sample] +':',np.round(AbsoluteAirspaceSurface[Sample],decimals=3),'cm^2'
 print
 print 'Stefans mean absolute airspace surface is',np.round(np.mean(AbsoluteAirspaceSurface),decimals=3),'cm^2.'
-print 'Our mean airspace surface is',np.round(np.mean(np.ma.masked_array(DiffusionSurface,np.isnan(DiffusionSurface))),decimals=3),'cm^2.'
+print 'Our mean airspace surface is',np.round(np.mean(np.ma.masked_array(DiffusionSurface,np.isnan(DiffusionSurface))),decimals=3),'cm^2.' 
+print '(approximately',np.round(np.mean(AbsoluteAirspaceSurface) / np.mean(np.ma.masked_array(DiffusionSurface,np.isnan(DiffusionSurface))),decimals=2),'x smaller)'
+
 #~ # <- STEPanizer
 
 print
@@ -346,10 +348,14 @@ print '_________________________________________________________________________
 print
 print 'Values for acinus.tex:'
 print 'add to preamble around line 76.'
-print '  \\newcommand{\\numberofacini}{' + str(TotalAssessedAcini) + '}'
-print '  \\newcommand{\\volume}{' + str(np.mean(np.ma.masked_array(MeanAcinarVolume,np.isnan(MeanAcinarVolume)))) + '} % cm^3, (mean acinar volume)'
-print '  \\newcommand{\std}{' + str(np.std(np.ma.masked_array(MeanAcinarVolume,np.isnan(MeanAcinarVolume)))) + '} % (Standard deviation of acinar volumes)'
-print '  \\newcommand{\difference}{' + str(+np.mean(np.ma.masked_array(STEPanizerMeVisLabDifference,np.isnan(STEPanizerMeVisLabDifference)))) + '} % X times bigger (acinar volumes STEPanizer/MeVisLab-volumes)'
+print '\\newcommand{\\numberofacini}{' + str(TotalAssessedAcini) + '}'
+print '\\newcommand{\\meantotalnumberofacini}{' + str(int(np.round(np.mean(np.ma.masked_array(NumberOfAcini,np.isnan(NumberOfAcini)))))) + '}'
+print '\\newcommand{\\meanacinarvolume}{' + str(np.mean(np.ma.masked_array(MeanAcinarVolume,np.isnan(MeanAcinarVolume)))) + '} % cm^3, (mean acinar volume)'
+print '\\newcommand{\\std}{' + str(np.std(np.ma.masked_array(MeanAcinarVolume,np.isnan(MeanAcinarVolume)))) + '} % (Standard deviation of acinar volumes)'
+print '\\newcommand{\\difference}{' + str(+np.mean(np.ma.masked_array(STEPanizerMeVisLabDifference,np.isnan(STEPanizerMeVisLabDifference)))) + '} % X times bigger (acinar volumes STEPanizer/MeVisLab-volumes)'
+print '\\newcommand{\\acinarsurface}{' + str(np.mean(np.ma.masked_array(MeanAcinarSurface,np.isnan(MeanAcinarSurface)))) + '} % cm^2'
+print '\\newcommand{\\meanairspacesurface}{' + str(np.mean(np.ma.masked_array(DiffusionSurface,np.isnan(DiffusionSurface)))) + '} % cm^2'
+print '\\newcommand{\\airspacedifference}{' + str(np.round(np.mean(AbsoluteAirspaceSurface) / np.mean(np.ma.masked_array(DiffusionSurface,np.isnan(DiffusionSurface))),decimals=2)) + '} % times'
 
 if PlotTheData == False:
 	exit()
