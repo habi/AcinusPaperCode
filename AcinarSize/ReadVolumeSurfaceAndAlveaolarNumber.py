@@ -245,7 +245,7 @@ for Sample in range(len(Rat)):
 					' | ' + str(Counts) + ' counts'
 			
 			# Bridges = Something to do with the Counts
-			Bridges[Sample][Acinus] = Counts
+			Bridges[Sample][Acinus] = round(Counts / 2)
 
 if ShrinkageFactor != 1:
 	print 'Calculated with a Shrinkagefactor of',ShrinkageFactor,'x'			
@@ -329,6 +329,20 @@ for Sample in range(len(Rat)):
 print 'In mean, (STEPanizer-/MeVisLab-volume) is',np.round(np.mean(np.ma.masked_array(STEPanizerMeVisLabDifference,np.isnan(STEPanizerMeVisLabDifference))),decimals=3)
 
 print '________________________________________________________________________________'
+print 'Eveline counted the Bridges (Entrance Rings/Alveoli) for each sample'
+NumberOfAlveoli = [[np.nan for Acinus in range(MaximumAcini)] for Sample in range(len(Rat))]
+for Sample in range(len(Rat)):
+	if Beamtime[Sample] != '':
+		print 'Bridges for',AssessedAcini[Sample],'acini for ' + str(WhichRat) + str(Rat[Sample])
+		for Acinus in range(MaximumAcini):
+			NumberOfAlveoli[Sample][Acinus] = Bridges[Sample][Acinus]/AcinarVolume[Sample][Acinus] # Hsia2010 Formula 17
+			if chatty:
+				if isnan(NumberOfAlveoli[Sample][Acinus]) == False:
+					print 'Acinus',str(Acinus) + ':',int(Bridges[Sample][Acinus]*2),'Counts | Volume:',round(AcinarVolume[Sample][Acinus],4),'| (Bridges/2)/Volume:', NumberOfAlveoli[Sample][Acinus]
+	else:
+		print 'Bridges for ' + str(WhichRat) + str(Rat[Sample]),'were not assessed.'
+
+print '________________________________________________________________________________'
 print
 print 'Values for acinus.tex:'
 print 'add to preamble around line 76.'
@@ -357,18 +371,17 @@ PlotNormalizedSTEPanizerVolume = [float(i)/max(PlotSTEPAnizerVolume) for i in Pl
 
 # Plot MeVisLab- and STEPanizer-Volumes (both original and normalized
 plt.figure(num=None,figsize=(16,9))
-# plot MeVisLabVolumes
+#~ # plot MeVisLabVolumes
 plt.subplot(221)
 # Using the sum of the AssessedAcini as below, we can set the correct
 # "distance" for the plots
-#~ ---
-#~ for Sample in range(len(Rat)):
-	#~ print 'Sample',Sample,'from',int(sum(AssessedAcini[:Sample])),'to',int(sum(AssessedAcini[:Sample+1]))
-#~ ---
+# for Sample in range(len(Rat)):
+	# print 'Sample',Sample,'from',int(sum(AssessedAcini[:Sample])),'to',int(sum(AssessedAcini[:Sample+1]))
 for Sample in range(len(Rat)):
-	plt.plot(\
-		range(int(sum(AssessedAcini[:Sample])),int(sum(AssessedAcini[:Sample+1]))),\
-		PlotMeVisLabVolume[int(sum(AssessedAcini[:Sample])):int(sum(AssessedAcini[:Sample+1]))],c=color[Sample])
+	plt.plot(range(int(sum(AssessedAcini[:Sample])),int(sum(AssessedAcini[:Sample+1]))),
+		PlotMeVisLabVolume[int(sum(AssessedAcini[:Sample])):int(sum(AssessedAcini[:Sample+1]))],
+		marker='o',
+		c=color[Sample])
 plt.ylabel('Volume [cm^3]')
 plt.xlabel('Acinus')
 plt.legend([WhichRat+Rat[1],WhichRat+Rat[3],WhichRat+Rat[4]],loc='best')
@@ -377,8 +390,10 @@ plt.xticks(arange(TotalAssessedAcini))
 # plot STEPanizerVolumes
 plt.subplot(222)
 for Sample in range(len(Rat)):
-	plt.plot(range(int(sum(AssessedAcini[:Sample])),int(sum(AssessedAcini[:Sample+1]))),\
-		PlotSTEPAnizerVolume[int(sum(AssessedAcini[:Sample])):int(sum(AssessedAcini[:Sample+1]))],c=color[Sample])	
+	plt.plot(range(int(sum(AssessedAcini[:Sample])),int(sum(AssessedAcini[:Sample+1]))),
+		PlotSTEPAnizerVolume[int(sum(AssessedAcini[:Sample])):int(sum(AssessedAcini[:Sample+1]))],
+		marker='o',
+		c=color[Sample])	
 plt.ylabel('Volume [cm^3]')
 plt.xlabel('Acinus')
 plt.legend([WhichRat+Rat[1],WhichRat+Rat[3],WhichRat+Rat[4]],loc='best')
@@ -387,8 +402,10 @@ plt.xticks(arange(TotalAssessedAcini))
 # plot NORMALIZED MeVisLabVolumes
 plt.subplot(223)
 for Sample in range(len(Rat)):
-	plt.plot(range(int(sum(AssessedAcini[:Sample])),int(sum(AssessedAcini[:Sample+1]))),\
-		PlotNormalizedMeVisLabVolume[int(sum(AssessedAcini[:Sample])):int(sum(AssessedAcini[:Sample+1]))],c=color[Sample])	
+	plt.plot(range(int(sum(AssessedAcini[:Sample])),int(sum(AssessedAcini[:Sample+1]))),
+		PlotNormalizedMeVisLabVolume[int(sum(AssessedAcini[:Sample])):int(sum(AssessedAcini[:Sample+1]))],
+		marker='o',
+		c=color[Sample])	
 plt.ylabel('Normalized Volume')
 plt.xlabel('Acinus')
 plt.legend([WhichRat+Rat[1],WhichRat+Rat[3],WhichRat+Rat[4]],loc='best')
@@ -397,8 +414,10 @@ plt.xticks(arange(TotalAssessedAcini))
 # plot NORMALIZED STEPanizerVolumes without NaNs
 plt.subplot(224)
 for Sample in range(len(Rat)):
-	plt.plot(range(int(sum(AssessedAcini[:Sample])),int(sum(AssessedAcini[:Sample+1]))),\
-		PlotNormalizedSTEPanizerVolume[int(sum(AssessedAcini[:Sample])):int(sum(AssessedAcini[:Sample+1]))],c=color[Sample])
+	plt.plot(range(int(sum(AssessedAcini[:Sample])),int(sum(AssessedAcini[:Sample+1]))),
+		PlotNormalizedSTEPanizerVolume[int(sum(AssessedAcini[:Sample])):int(sum(AssessedAcini[:Sample+1]))],
+		marker='o',
+		c=color[Sample])
 plt.ylabel('Normalized Volume')
 plt.xlabel('Acinus')
 plt.legend([WhichRat+Rat[1],WhichRat+Rat[3],WhichRat+Rat[4]],loc='best')
@@ -410,222 +429,248 @@ if SaveFigures:
 if TikZTheData:
 	tikz_save('plot_mevislab_vs_stepanizervolumes.tikz')
 
-# plot MeVisLabVolumes in one plot
-plt.figure(num=None,figsize=(16,9))
-legend=[]
-for Sample in range(len(Rat)):
-	legend.append(WhichRat+Rat[Sample])
-	plt.plot(range(MaximumAcini*Sample,MaximumAcini*(Sample+1)),MeVisLabVolume[Sample],c=color[Sample])
-plt.title('MeVisLabVolume')
-plt.legend(legend,loc='best')
-if SaveFigures:
-	plt.savefig('plot_mevisvolumes.png',transparent=False)
-if TikZTheData:
-	tikz_save('plot_mevisvolumes.tikz')
+#~ # plot MeVisLabVolumes in one plot
+#~ plt.figure(num=None,figsize=(16,9))
+#~ legend=[]
+#~ for Sample in range(len(Rat)):
+	#~ legend.append(WhichRat+Rat[Sample])
+	#~ plt.plot(range(MaximumAcini*Sample,MaximumAcini*(Sample+1)),
+		#~ MeVisLabVolume[Sample],
+		#~ marker='o',
+		#~ c=color[Sample])
+#~ plt.title('MeVisLabVolume')
+#~ plt.legend(legend,loc='best')
+#~ if SaveFigures:
+	#~ plt.savefig('plot_mevisvolumes.png',transparent=False)
+#~ if TikZTheData:
+	#~ tikz_save('plot_mevisvolumes.tikz')
+#~ 
+#~ # plot STEPanizerVolumes in one plot
+#~ plt.figure(num=None,figsize=(16,9))
+#~ for Sample in range(len(Rat)):
+	#~ plt.plot(range(MaximumAcini*Sample,MaximumAcini*(Sample+1)),
+		#~ AcinarVolume[Sample],
+		#~ marker='o',
+		#~ c=color[Sample])
+#~ plt.title('STEPanizerVolume')
+#~ plt.legend(legend,loc='best')
+#~ if SaveFigures:
+	#~ plt.savefig('plot_stepanizervolumes.png',transparent=False)
+#~ if TikZTheData:
+	#~ tikz_save('plot_stepanizervolumes.tikz')
+	#~ 
+#~ # plot both MeVisLab- and STEPanizer-Volumes in one plot
+#~ plt.figure(num=None,figsize=(16,9))
+#~ for Sample in range(len(Rat)):
+	#~ plt.plot(range(MaximumAcini*Sample,MaximumAcini*(Sample+1)),
+		#~ MeVisLabVolume[Sample],
+		#~ color[Sample]+'--',
+		#~ marker='*')
+	#~ plt.plot(range(MaximumAcini*Sample,
+		#~ MaximumAcini*(Sample+1)),
+		#~ AcinarVolume[Sample],
+		#~ color[Sample],
+		#~ marker='o')
+	plt.ylim([0,max(max(max(MeVisLabVolume)),max(max(AcinarVolume)))])
+#~ plt.title('Volumes')
+#~ plt.legend(['MeVisLab','STEPanizer'],loc='best')
+#~ if SaveFigures:
+	#~ plt.savefig('plot_stepanizervolumes.png',transparent=False)
+#~ if TikZTheData:
+	#~ tikz_save('plot_stepanizervolumes.tikz')	
+	#~ 
+#~ import win32api
+#~ win32api.MessageBox(0, 'Select one Acinus, I will then show you a slice of the selected acinus afterwards', 'Acinus Selection', 0x00001000)
+#~ tellme('Select acinus to look at a slice\nStop with middle mouse button')
+#~ 
+#~ AcinusToLookAt = int(round(plt.ginput(1,timeout=0)[0][0]))
+#~ 
+#~ for Sample in range(len(Rat)):
+	#~ if (AcinusToLookAt >= MaximumAcini*Sample) and (AcinusToLookAt < MaximumAcini*(Sample+1)):
+		#~ print 'The selected Acinus',AcinusToLookAt,'corresponds to acinus',AcinusToLookAt-MaximumAcini*Sample,'of sample',WhichRat+Rat[Sample]
+		#~ print 'This acinus can be found in the folder ',os.path.dirname(CSVFileVolume[Sample][AcinusToLookAt-MaximumAcini*Sample]),\
+			#~ ', which contains',\
+			#~ len(glob.glob(os.path.join(os.path.dirname(CSVFileVolume[Sample][AcinusToLookAt-MaximumAcini*Sample]),'*.jpg'))),\
+			#~ '.jpg files'
+		#~ print 'We are opening',\
+			#~ glob.glob(os.path.join(os.path.dirname(CSVFileVolume[Sample][AcinusToLookAt-MaximumAcini*Sample]),'*.jpg'))[int(len(glob.glob(os.path.join(os.path.dirname(CSVFileVolume[Sample][AcinusToLookAt-MaximumAcini*Sample]),'*.jpg')))/2)],\
+			#~ 'to look at.'
+		#~ os.startfile(glob.glob(os.path.join(os.path.dirname(CSVFileVolume[Sample][AcinusToLookAt-MaximumAcini*Sample]),'*.jpg'))[int(len(glob.glob(os.path.join(os.path.dirname(CSVFileVolume[Sample][AcinusToLookAt-MaximumAcini*Sample]),'*.jpg')))/2)])
+#~ 
+#~ print '________________________________________________________________________________'
 
-# plot STEPanizerVolumes in one plot
-plt.figure(num=None,figsize=(16,9))
-for Sample in range(len(Rat)):
-	plt.plot(range(MaximumAcini*Sample,MaximumAcini*(Sample+1)),AcinarVolume[Sample],c=color[Sample])
-plt.title('STEPanizerVolume')
-plt.legend(legend,loc='best')
-if SaveFigures:
-	plt.savefig('plot_stepanizervolumes.png',transparent=False)
-if TikZTheData:
-	tikz_save('plot_stepanizervolumes.tikz')
-	
-# plot both MeVisLab- and STEPanizer-Volumes in one plot
-plt.figure(num=None,figsize=(16,9))
-for Sample in range(len(Rat)):
-	plt.plot(range(MaximumAcini*Sample,MaximumAcini*(Sample+1)),MeVisLabVolume[Sample],color[Sample]+'--',marker='*')
-	plt.plot(range(MaximumAcini*Sample,MaximumAcini*(Sample+1)),AcinarVolume[Sample],color[Sample],marker='o')
-	#~ plt.ylim([0,max(max(max(MeVisLabVolume)),max(max(AcinarVolume)))])
-plt.title('Volumes')
-plt.legend(['MeVisLab','STEPanizer'],loc='best')
-if SaveFigures:
-	plt.savefig('plot_stepanizervolumes.png',transparent=False)
-if TikZTheData:
-	tikz_save('plot_stepanizervolumes.tikz')	
-	
-import win32api
-win32api.MessageBox(0, 'Select one Acinus, I will then show you a slice of this one...', 'Acinus Selection', 0x00001000)
-tellme('Select acinus to look at a slice\nStop with middle mouse button')
+#~ # Plot the interesting stuff
+#~ # Plot MeVisLab- against STEPanizer-volumes
+#~ plt.figure(num=None,figsize=(16,9))
+#~ for Sample in range(len(Rat)):
+	#~ plt.subplot(len(Rat),1,Sample+1)
+	#~ if Beamtime[Sample] != '':
+		#~ if TikZTheData:
+			#~ plt.plot(range(MaximumAcini),
+				#~ MeVisLabVolume[Sample],
+				#~ marker='o',
+				#~ c='g')
+			#~ plt.plot(range(MaximumAcini),
+				#~ AcinarVolume[Sample],
+				#~ marker='o',
+				#~ c='b')
+		#~ else:
+			#~ plt.scatter(range(MaximumAcini),MeVisLabVolume[Sample],c='g')
+			#~ plt.scatter(range(MaximumAcini),AcinarVolume[Sample],c='b')
+			#~ plt.legend(['MeVisLab','STEPanizer'],loc='best')
+	#~ if Beamtime[Sample] == '':
+		#~ plt.title('Volumes of acini of ' + WhichRat + Rat[Sample] + ' were not assessed')
+	#~ else:
+		#~ plt.title('Volumes of acini of ' + Beamtime[Sample] + '\\' + WhichRat+Rat[Sample])
+	#~ plt.xlim([0,MaximumAcini])
+	#~ plt.ylim([0,None])
+	#~ plt.xticks(arange(MaximumAcini))
+#~ plt.tight_layout()
+#~ if SaveFigures:
+	#~ plt.savefig('plot_mevis_vs_stepanizer_volumes.png',transparent=False)
+#~ if TikZTheData:
+	#~ tikz_save('plot_mevis_vs_stepanizer_volumes.tikz')
 
-AcinusToLookAt = int(round(plt.ginput(1,timeout=0)[0][0]))
-
-for Sample in range(len(Rat)):
-	if (AcinusToLookAt >= MaximumAcini*Sample) and (AcinusToLookAt < MaximumAcini*(Sample+1)):
-		print 'The selected Acinus',AcinusToLookAt,'corresponds to acinus',AcinusToLookAt-MaximumAcini*Sample,'of sample',WhichRat+Rat[Sample]
-		print 'This acinus can be found in',os.path.dirname(CSVFileVolume[Sample][AcinusToLookAt-MaximumAcini*Sample])
-		print 'Which contains',len(glob.glob(os.path.join(os.path.dirname(CSVFileVolume[Sample][AcinusToLookAt-MaximumAcini*Sample]),'*.jpg'))),\
-			'.jpg files'
-		print 'We are opening',WhichRat + Rat[Sample] + '-acinusXXXXX_' +\
-			str(int(len(glob.glob(os.path.join(os.path.dirname(CSVFileVolume[Sample][AcinusToLookAt-MaximumAcini*Sample]),'*.jpg')))/2)) +\
-			'.jpg'
-
-exit()
-print '________________________________________________________________________________'
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Plot the interesting stuff
-# Plot MeVisLab- against STEPanizer-volumes
-plt.figure(num=None,figsize=(16,9))
-for Sample in range(len(Rat)):
-	plt.subplot(len(Rat),1,Sample+1)
-	if Beamtime[Sample] != '':
-		if TikZTheData:
-			plt.plot(range(MaximumAcini),MeVisLabVolume[Sample],c='g')
-			plt.plot(range(MaximumAcini),AcinarVolume[Sample],c='b')
-		else:
-			plt.scatter(range(MaximumAcini),MeVisLabVolume[Sample],c='g')
-			plt.scatter(range(MaximumAcini),AcinarVolume[Sample],c='b')
-			plt.legend(['MeVisLab','STEPanizer'],loc='best')
-	if Beamtime[Sample] == '':
-		plt.title('Volumes of acini of ' + WhichRat + Rat[Sample] + ' were not assessed')
-	else:
-		plt.title('Volumes of acini of ' + Beamtime[Sample] + '\\' + WhichRat+Rat[Sample])
-	plt.xlim([0,MaximumAcini])
-	plt.ylim([0,None])
-	plt.xticks(arange(MaximumAcini))
-plt.tight_layout()
-if SaveFigures:
-	plt.savefig('plot_mevis_vs_stepanizer_volumes.png',transparent=False)
-if TikZTheData:
-	tikz_save('plot_mevis_vs_stepanizer_volumes.tikz')
-
-plt.figure(num=None,figsize=(16,9))
-for Sample in range(len(Rat)):
-	plt.subplot(len(Rat),1,Sample+1)
-	if TikZTheData:
-		plt.plot(range(MaximumAcini),STEPanizerMeVisLabDifference[Sample],c=color[Sample])
-	else:
-		plt.scatter(range(MaximumAcini),STEPanizerMeVisLabDifference[Sample],c=color[Sample])		
-	plt.xlim([0,MaximumAcini])
-	plt.ylim([0,None])
-	if Beamtime[Sample] == '':
-		plt.title(WhichRat + Rat[Sample])
-	else:
-		plt.title(Beamtime[Sample] + '\\' + WhichRat + Rat[Sample] + ': STEPanizer/MeVisLab-Difference')
-	plt.xticks(arange(MaximumAcini))
-plt.tight_layout()
-if SaveFigures:
-	plt.savefig('plot_mevis_vs_stepanizer_volumeratio.png',transparent=False)
-if TikZTheData:
-	tikz_save('plot_mevis_vs_stepanizer_volumeratio.tikz')
-
-# Boxplot of Volumes
-plt.figure(num=None,figsize=(16,9))
-for Sample in range(len(Rat)):
+#~ plt.figure(num=None,figsize=(16,9))
+#~ for Sample in range(len(Rat)):
+	#~ plt.subplot(len(Rat),1,Sample+1)
+	#~ if TikZTheData:
+		#~ plt.plot(range(MaximumAcini),
+			#~ STEPanizerMeVisLabDifference[Sample],
+			#~ marker='o',
+			#~ c=color[Sample])
+	#~ else:
+		#~ plt.scatter(range(MaximumAcini),STEPanizerMeVisLabDifference[Sample],c=color[Sample])		
+	#~ plt.xlim([0,MaximumAcini])
+	#~ plt.ylim([0,None])
+	#~ if Beamtime[Sample] == '':
+		#~ plt.title(WhichRat + Rat[Sample])
+	#~ else:
+		#~ plt.title(Beamtime[Sample] + '\\' + WhichRat + Rat[Sample] + ': STEPanizer/MeVisLab-Difference')
+	#~ plt.xticks(arange(MaximumAcini))
+#~ plt.tight_layout()
+#~ if SaveFigures:
+	#~ plt.savefig('plot_mevis_vs_stepanizer_volumeratio.png',transparent=False)
+#~ if TikZTheData:
+	#~ tikz_save('plot_mevis_vs_stepanizer_volumeratio.tikz')
+#~ 
+#~ # Boxplot of Volumes
+#~ plt.figure(num=None,figsize=(16,9))
+#~ for Sample in range(len(Rat)):
 	#~ plt.xlim([0,2])
-	plt.subplot(3,len(Rat),Sample+1)#,axisbg=color[Sample])
-	if Beamtime[Sample] != '':
-		plt.boxplot([x for x in AcinarVolume[Sample] if not math.isnan(x)],1) # http://is.gd/Ywxpiz remove all np.Nan for boxplotting
-	plt.title(str(WhichRat) + str(Rat[Sample])+'\nRUL-Volume='+str(RULVolume[Sample])+' cm^3')
-	plt.ylabel('Acinar Volume')
-	plt.subplot(3,len(Rat),Sample+1+len(Rat))#,axisbg=color[Sample])
-	if Beamtime[Sample] != '':
-		plt.boxplot([x for x in SurfaceDensity[Sample] if not math.isnan(x)],1) # http://is.gd/Ywxpiz remove all np.Nan for boxplotting
-	plt.ylabel('Surface Density')
-	plt.subplot(3,len(Rat),Sample+1+2*len(Rat))#,axisbg=color[Sample])
-	if Beamtime[Sample] != '':
-		plt.boxplot([x for x in AbsoluteSurface[Sample] if not math.isnan(x)],1) # http://is.gd/Ywxpiz remove all np.Nan for boxplotting
-	plt.ylabel('Absolute Surface')
-plt.tight_layout()
-if SaveFigures:
-	plt.savefig('plot_boxplot_of_volumes.png',transparent=False)
-if TikZTheData:
-	tikz_save('plot_boxplot_of_volumes.tikz')
-
-# Plotting Volumes, Surface Density and Absolute Surfaces
-plt.figure(num=None,figsize=(16,9))
-for Sample in range(len(Rat)):
-	plt.subplot(311)
-	plt.xlim([0,MaximumAcini])
-	if Beamtime[Sample] != '':
-		if TikZTheData:
-			plt.plot(range(MaximumAcini),AcinarVolume[Sample],c=color[Sample])
-		else:
-			plt.scatter(range(MaximumAcini),AcinarVolume[Sample],c=color[Sample])
-	plt.title('Volume (AcinusTestPoints * Area * STEPanizerPixelSize_Vol * SliceNumber * TOMCATVoxelSize)')
-	plt.xlim([0,MaximumAcini])
-	plt.ylim([0,max(max(AcinarVolume))])
-	plt.subplot(312)
-	plt.xlim([0,MaximumAcini])
-	if Beamtime[Sample] != '':
-		if TikZTheData:
-			plt.plot(range(MaximumAcini),SurfaceDensity[Sample],c=color[Sample])
-		else:
-			plt.scatter(range(MaximumAcini),SurfaceDensity[Sample],c=color[Sample])
-	plt.title('Surface Density (2 * Int / Length)')
-	plt.subplot(313)
-	plt.xlim([0,MaximumAcini])
-	plt.ylim([0,None])
-	if Beamtime[Sample] != '':
-		if TikZTheData:
-			plt.plot(range(MaximumAcini),AbsoluteSurface[Sample],c=color[Sample])
-		else:
-			plt.scatter(range(MaximumAcini),AbsoluteSurface[Sample],c=color[Sample])
-	plt.title('Absolute Surface (SurfaceDensity * AcinarVolume)')
-	plt.legend([Beamtime[1] + "\\" + WhichRat + Rat[1],Beamtime[3] + '\\' + WhichRat + Rat[3],Beamtime[4] + '\\' + WhichRat + Rat[4]],loc='best')#loc='upper center', bbox_to_anchor=(0.5, -0.1), ncol=3)
-	plt.xlim([0,MaximumAcini])
-	plt.ylim([0,None])
-	plt.tight_layout()
-if SaveFigures:
-	plt.savefig('plot_acinarvolume_surfacedensity_absolutesurface.png',transparent=False)
-if TikZTheData:
-	tikz_save('plot_acinarvolume_surfacedensity_absolutesurface.tikz')
-
-# Plot Bridges vs. Volume (Evelyne vs. David)
-plt.figure(num=None,figsize=(16,9))
-plt.subplots_adjust(hspace=1)
-for Sample in range(len(Rat)):
-	ax = plt.subplot(len(Rat),1,Sample+1)
-	plt.scatter(range(MaximumAcini),Bridges[Sample],c='r')
-	plt.scatter(range(MaximumAcini),AcinarVolume[Sample],c='b')
-	plt.title('Bridges ' + WhichRat + Rat[Sample] +': ' +\
-		str(np.sum(np.ma.masked_array(Bridges[Sample],np.isnan(Bridges[Sample])))) +\
-		' (total)')
-	# Shink plot to make space for the legend: http://stackoverflow.com/a/4701285/323100
+	#~ plt.subplot(3,len(Rat),Sample+1)#,axisbg=color[Sample])
+	#~ if Beamtime[Sample] != '':
+		#~ plt.boxplot([x for x in AcinarVolume[Sample] if not math.isnan(x)],1) # http://is.gd/Ywxpiz remove all np.Nan for boxplotting
+	#~ plt.title(str(WhichRat) + str(Rat[Sample])+'\nRUL-Volume='+str(RULVolume[Sample])+' cm^3')
+	#~ plt.ylabel('Acinar Volume')
+	#~ plt.subplot(3,len(Rat),Sample+1+len(Rat))#,axisbg=color[Sample])
+	#~ if Beamtime[Sample] != '':
+		#~ plt.boxplot([x for x in SurfaceDensity[Sample] if not math.isnan(x)],1) # http://is.gd/Ywxpiz remove all np.Nan for boxplotting
+	#~ plt.ylabel('Surface Density')
+	#~ plt.subplot(3,len(Rat),Sample+1+2*len(Rat))#,axisbg=color[Sample])
+	#~ if Beamtime[Sample] != '':
+		#~ plt.boxplot([x for x in AbsoluteSurface[Sample] if not math.isnan(x)],1) # http://is.gd/Ywxpiz remove all np.Nan for boxplotting
+	#~ plt.ylabel('Absolute Surface')
+#~ plt.tight_layout()
+#~ if SaveFigures:
+	#~ plt.savefig('plot_boxplot_of_volumes.png',transparent=False)
+#~ if TikZTheData:
+	#~ tikz_save('plot_boxplot_of_volumes.tikz')
+#~ 
+#~ # Plotting Volumes, Surface Density and Absolute Surfaces
+#~ plt.figure(num=None,figsize=(16,9))
+#~ for Sample in range(len(Rat)):
+	#~ plt.subplot(311)
+	#~ plt.xlim([0,MaximumAcini])
+	#~ if Beamtime[Sample] != '':
+		#~ if TikZTheData:
+			#~ plt.plot(range(MaximumAcini),
+				#~ AcinarVolume[Sample],
+				#~ marker='o',
+				#~ c=color[Sample])
+		#~ else:
+			#~ plt.scatter(range(MaximumAcini),AcinarVolume[Sample],c=color[Sample])
+	#~ plt.title('Volume (AcinusTestPoints * Area * STEPanizerPixelSize_Vol * SliceNumber * TOMCATVoxelSize)')
+	#~ plt.xlim([0,MaximumAcini])
+	#~ plt.ylim([0,max(max(AcinarVolume))])
+	#~ plt.subplot(312)
+	#~ plt.xlim([0,MaximumAcini])
+	#~ if Beamtime[Sample] != '':
+		#~ if TikZTheData:
+			#~ plt.plot(range(MaximumAcini),
+				#~ SurfaceDensity[Sample],
+				#~ marker='o',
+				#~ c=color[Sample])
+		#~ else:
+			#~ plt.scatter(range(MaximumAcini),SurfaceDensity[Sample],c=color[Sample])
+	#~ plt.title('Surface Density (2 * Int / Length)')
+	#~ plt.subplot(313)
+	#~ plt.xlim([0,MaximumAcini])
+	#~ plt.ylim([0,None])
+	#~ if Beamtime[Sample] != '':
+		#~ if TikZTheData:
+			#~ plt.plot(range(MaximumAcini),
+				#~ AbsoluteSurface[Sample],
+				#~ marker='o',
+				#~ c=color[Sample])
+		#~ else:
+			#~ plt.scatter(range(MaximumAcini),AbsoluteSurface[Sample],c=color[Sample])
+	#~ plt.title('Absolute Surface (SurfaceDensity * AcinarVolume)')
+	#~ plt.legend([Beamtime[1] + "\\" + WhichRat + Rat[1],Beamtime[3] + '\\' + WhichRat + Rat[3],Beamtime[4] + '\\' + WhichRat + Rat[4]],loc='best')#loc='upper center', bbox_to_anchor=(0.5, -0.1), ncol=3)
+	#~ plt.xlim([0,MaximumAcini])
+	#~ plt.ylim([0,None])
+	#~ plt.tight_layout()
+#~ if SaveFigures:
+	#~ plt.savefig('plot_acinarvolume_surfacedensity_absolutesurface.png',transparent=False)
+#~ if TikZTheData:
+	#~ tikz_save('plot_acinarvolume_surfacedensity_absolutesurface.tikz')
+#~ 
+#~ # Plot Bridges vs. Volume (Evelyne vs. David)
+#~ plt.figure(num=None,figsize=(16,9))
+#~ plt.subplots_adjust(hspace=1)
+#~ for Sample in range(len(Rat)):
+	#~ ax = plt.subplot(len(Rat),1,Sample+1)
+	#~ plt.scatter(range(MaximumAcini),Bridges[Sample],c='r')
+	#~ plt.scatter(range(MaximumAcini),AcinarVolume[Sample],c='b')
+	#~ plt.title('Bridges ' + WhichRat + Rat[Sample] +': ' +\
+		#~ str(np.sum(np.ma.masked_array(Bridges[Sample],np.isnan(Bridges[Sample])))) +\
+		#~ ' (total)')
+	#~ # Shink plot to make space for the legend: http://stackoverflow.com/a/4701285/323100
 	#~ box = ax.get_position()
 	#~ ax.set_position([box.x0, box.y0, box.width * 0.75, box.height])		
-	plt.legend(['Bridges (Evelyne) ','Volume (David)'],loc='best')
-	plt.xlim([0,MaximumAcini])
-	plt.xticks(arange(MaximumAcini))
-	plt.ylim([0,None])
-	plt.tight_layout()
-if SaveFigures:
-	plt.savefig('plot_bridges_vs_volume.png',transparent=False)
-if TikZTheData:
-	tikz_save('plot_bridges_vs_volume.tikz')
-	
-#~ # http://is.gd/JWhkjn
-#~ t = np.arange(10)
+	#~ plt.legend(['Bridges (Evelyne) ','Volume (David)'],loc='best')
+	#~ plt.xlim([0,MaximumAcini])
+	#~ plt.xticks(arange(MaximumAcini))
+	#~ plt.ylim([0,None])
+	#~ plt.tight_layout()
+#~ if SaveFigures:
+	#~ plt.savefig('plot_bridges_vs_volume.png',transparent=False)
+#~ if TikZTheData:
+	#~ tikz_save('plot_bridges_vs_volume.tikz')
+	#~ 
+#~ # Plot Bridges vs. Volume (Evelyne)
 #~ plt.figure(num=None,figsize=(16,9))
-#~ plt.plot(t, np.sin(t))
-#~ print "Please click"
-#~ x = plt.ginput(3)
-#~ print "clicked",x[0][0]
-#~ plt.show()
-#~ 
-#~ 
-#~ sys.exit()
+#~ for Sample in range(len(Rat)):
+	#~ plt.subplot(2,len(Rat),Sample)
+	#~ plt.plot(Bridges[Sample],marker='o')
+	#~ plt.title('Bridges ' + str(WhichRat) + str(Rat[Sample]))
+	#~ plt.subplot(2,len(Rat),Sample+len(Rat))
+	#~ plt.plot(NumberOfAlveoli[Sample],marker='o')
+	#~ plt.title('# of Alveoli ' + str(WhichRat) + str(Rat[Sample]))
+#~ if SaveFigures:
+	#~ plt.savefig('plot_bridges_and_number_of_acini.png',transparent=False)
+#~ if TikZTheData:
+	#~ tikz_save('plot_bridges_and_number_of_acini.tikz')
+	#~ 
 
+# http://is.gd/JWhkjn
+# -*- noplot -*-
+# t = np.arange(10)
+# plt.figure(num=None,figsize=(16,9))
+# plt.plot(t, np.sin(t))
+# print "Please click"
+# x = plt.ginput(3)
+# print "clicked",x[0][0]
+# plt.show()
 
 plt.show()
