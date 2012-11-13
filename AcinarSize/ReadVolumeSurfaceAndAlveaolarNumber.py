@@ -22,7 +22,7 @@ if os.path.exists(Drive) == False:
 	print 'Cannot read ' + str(Drive) + '. Exiting!'
 	exit()
 
-chatty = False # set to 'False' to suppress some output.
+chatty = True # set to 'False' to suppress some output.
 PlotTheData = True # True/False switches between showing and not showing the plots at the end
 SaveFigures = False # save the plot to .png-Files
 TikZTheData = False # save the data to .tikz-Files to import into LaTeX
@@ -162,6 +162,7 @@ TotalTestPoints = [[np.nan for Acinus in range(MaximumAcini)] for Sample in rang
 NonParenchymalPoints= [[np.nan for Acinus in range(MaximumAcini)] for Sample in range(len(Rat))]
 ParenchymalPoints = [[np.nan for Acinus in range(MaximumAcini)] for Sample in range(len(Rat))]
 ParenchymalVolume = [[np.nan for Acinus in range(MaximumAcini)] for Sample in range(len(Rat))]
+LJKLK = [[np.nan for Acinus in range(MaximumAcini)] for Sample in range(len(Rat))]
 for Sample in range(len(Rat)):
 	if Beamtime[Sample] == '':
 		print WhichRat + Rat[Sample] + ': not measured'
@@ -195,7 +196,9 @@ for Sample in range(len(Rat)):
 					'|',"%04d" % (Interceptions),'Interceptions',\
 					'|',"%03d" % (AcinusTestPoints),'Points in Acinus',\
 					'|',"%03d" % (NonParenchymalPoints[Sample][Acinus]),'Nonparenchymal Points'
-
+			
+			LJKLK[Sample][Acinus] = Area_Vol
+			
 			# Volume = AcinusTestPoints * Area_Vol * STEPanizerPixelSize_Vol * SliceNumber * TOMCATVoxelSize		
 			AcinarVolume[Sample][Acinus] = ((( AcinusTestPoints * Area_Vol * STEPanizerPixelSize_Vol * SliceNumber * TOMCATVoxelSize ) / ShrinkageFactor) / 1e12) # scaling volume to cm^3: http://is.gd/wbZ81O
 								
@@ -216,9 +219,19 @@ if ShrinkageFactor != 1:
 	print 'Calculated with a Shrinkagefactor of',ShrinkageFactor,'x'			
 print
 
+plt.figure()
+for Sample in range(len(Rat)):
+	plt.subplot(1,len(Rat),Sample)
+	plt.plot(AbsoluteSurface[Sample])
+
+plt.show()
+exit()
+
+
 print 'STEPanizer: Alveoli (Evelyne)'
 # Read data from each STEPanizer .csv-file and calculate the desired values
 Bridges = [[np.nan for Acinus in range(MaximumAcini)] for Sample in range(len(Rat))]
+NumberOfAlveoli = [[np.nan for Acinus in range(MaximumAcini)] for Sample in range(len(Rat))]
 for Sample in range(len(Rat)):
 	if Beamtime[Sample] == '':
 		print 'Sample',WhichRat + Rat[Sample] + ': not measured'
@@ -238,14 +251,33 @@ for Sample in range(len(Rat)):
 						Area_Acini = double(line[1])*STEPanizerPixelSize_Vol**2
 					if line[0] == 'l(p):':
 						LinePointLength_Alveoli = double(line[1])*STEPanizerPixelSize_Vol
+			
+			# Bridges = Something to do with the Counts
+			# Counts are all counted bridges. The bridges are half this number, since
+			# she counted from both sides. Evelyne alway counted every second image,
+			# we thus need to double her values.
+			Bridges[Sample][Acinus] = Counts # = round(round(Counts / 2 ) * 2 ) )
+			
+			# Hsiah2010 p. 407:
+			# Counting the number of entrance rings in paired sections by the disector
+			# technique allows estimation of total number of alveoli in the lung N(a,L) (112, 113).
+			# N(a,L) is the product of the number of alveolar openings per unit parenchyma
+			# volume (Sn/Vp) with the volume density of parenchyma per unit lung volume VV(p,L)
+			# and the absolute lung volume:
+			# N(a,L,) = (Sn/Vp) * VV(p,L) * V(L) (Formula 17)
+			
+			NumberOfAlveoli[Sample][Acinus] = \
+				( Bridges[Sample][Acinus] / AcinarVolume[Sample][Acinus] ) * \
+				( AbsoluteParenchymalVolume[Sample] / AbsoluteAirspaceVolume[Sample] ) * \
+				RULVolume[Sample]
+
 			# Give out counted/assessed data if desired
 			if chatty:
 				print 'Acinus ' + str("%02d" % (Acinus)) +\
 					' | ' + str("%03d" % (TotalSlices)) + ' Files' +\
-					' | ' + str(Counts) + ' counts'
-			
-			# Bridges = Something to do with the Counts
-			Bridges[Sample][Acinus] = round(Counts / 2)
+					' | ' + str(Counts) + ' counts' +\
+					' | ' + str(Bridges[Sample][Acinus]) + ' bridges' +\
+					' | ' + str(NumberOfAlveoli[Sample][Acinus]) + ' alveoli'
 
 if ShrinkageFactor != 1:
 	print 'Calculated with a Shrinkagefactor of',ShrinkageFactor,'x'			
@@ -311,7 +343,6 @@ print 'Our mean airspace surface is',np.round(np.mean(np.ma.masked_array(Diffusi
 print '(approximately',np.round(np.mean(AbsoluteAirspaceSurface) / np.mean(np.ma.masked_array(DiffusionSurface,np.isnan(DiffusionSurface))),decimals=2),'x smaller)'
 
 #~ # <- STEPanizer
-
 print
 print 'MeVisLab volume compared to STEPanizer volume (STEPanizer/MeVisLab)'
 STEPanizerMeVisLabDifference = [[np.nan for Acinus in range(MaximumAcini)] for Sample in range(len(Rat))]
@@ -329,20 +360,6 @@ for Sample in range(len(Rat)):
 			print WhichRat + Rat[Sample],'was not measured'
 	
 print 'In mean, (STEPanizer-/MeVisLab-volume) is',np.round(np.mean(np.ma.masked_array(STEPanizerMeVisLabDifference,np.isnan(STEPanizerMeVisLabDifference))),decimals=3)
-
-print '________________________________________________________________________________'
-print 'Eveline counted the Bridges (Entrance Rings/Alveoli) for each sample'
-NumberOfAlveoli = [[np.nan for Acinus in range(MaximumAcini)] for Sample in range(len(Rat))]
-for Sample in range(len(Rat)):
-	if Beamtime[Sample] != '':
-		print 'Bridges for',AssessedAcini[Sample],'acini for ' + str(WhichRat) + str(Rat[Sample])
-		for Acinus in range(MaximumAcini):
-			NumberOfAlveoli[Sample][Acinus] = Bridges[Sample][Acinus]/AcinarVolume[Sample][Acinus] # Hsia2010 Formula 17
-			if chatty:
-				if isnan(NumberOfAlveoli[Sample][Acinus]) == False:
-					print 'Acinus',str(Acinus) + ':',int(Bridges[Sample][Acinus]*2),'Counts | Volume:',round(AcinarVolume[Sample][Acinus],4),'| (Bridges/2)/Volume:', NumberOfAlveoli[Sample][Acinus]
-	else:
-		print 'Bridges for ' + str(WhichRat) + str(Rat[Sample]),'were not assessed.'
 
 print '________________________________________________________________________________'
 print
@@ -450,7 +467,7 @@ if TikZTheData:
 	#~ plt.savefig('plot_mevisvolumes.png',transparent=False)
 #~ if TikZTheData:
 	#~ tikz_save('plot_mevisvolumes.tikz')
-#~ 
+
 #~ # plot STEPanizerVolumes in one plot
 #~ plt.figure(num=None,figsize=(16,9))
 #~ for Sample in range(len(Rat)):
@@ -464,46 +481,45 @@ if TikZTheData:
 	#~ plt.savefig('plot_stepanizervolumes.png',transparent=False)
 #~ if TikZTheData:
 	#~ tikz_save('plot_stepanizervolumes.tikz')
-	#~ 
-#~ # plot both MeVisLab- and STEPanizer-Volumes in one plot
-#~ plt.figure(num=None,figsize=(16,9))
-#~ for Sample in range(len(Rat)):
-	#~ plt.plot(range(MaximumAcini*Sample,MaximumAcini*(Sample+1)),
-		#~ MeVisLabVolume[Sample],
-		#~ color[Sample]+'--',
-		#~ marker='*')
-	#~ plt.plot(range(MaximumAcini*Sample,
-		#~ MaximumAcini*(Sample+1)),
-		#~ AcinarVolume[Sample],
-		#~ color[Sample],
-		#~ marker='o')
-	plt.ylim([0,max(max(max(MeVisLabVolume)),max(max(AcinarVolume)))])
-#~ plt.title('Volumes')
-#~ plt.legend(['MeVisLab','STEPanizer'],loc='best')
-#~ if SaveFigures:
-	#~ plt.savefig('plot_stepanizervolumes.png',transparent=False)
-#~ if TikZTheData:
-	#~ tikz_save('plot_stepanizervolumes.tikz')	
-	#~ 
-#~ import win32api
-#~ win32api.MessageBox(0, 'Select one Acinus, I will then show you a slice of the selected acinus afterwards', 'Acinus Selection', 0x00001000)
-#~ tellme('Select acinus to look at a slice\nStop with middle mouse button')
-#~ 
-#~ AcinusToLookAt = int(round(plt.ginput(1,timeout=0)[0][0]))
-#~ 
-#~ for Sample in range(len(Rat)):
-	#~ if (AcinusToLookAt >= MaximumAcini*Sample) and (AcinusToLookAt < MaximumAcini*(Sample+1)):
-		#~ print 'The selected Acinus',AcinusToLookAt,'corresponds to acinus',AcinusToLookAt-MaximumAcini*Sample,'of sample',WhichRat+Rat[Sample]
-		#~ print 'This acinus can be found in the folder ',os.path.dirname(CSVFileVolume[Sample][AcinusToLookAt-MaximumAcini*Sample]),\
-			#~ ', which contains',\
-			#~ len(glob.glob(os.path.join(os.path.dirname(CSVFileVolume[Sample][AcinusToLookAt-MaximumAcini*Sample]),'*.jpg'))),\
-			#~ '.jpg files'
-		#~ print 'We are opening',\
-			#~ glob.glob(os.path.join(os.path.dirname(CSVFileVolume[Sample][AcinusToLookAt-MaximumAcini*Sample]),'*.jpg'))[int(len(glob.glob(os.path.join(os.path.dirname(CSVFileVolume[Sample][AcinusToLookAt-MaximumAcini*Sample]),'*.jpg')))/2)],\
-			#~ 'to look at.'
-		#~ os.startfile(glob.glob(os.path.join(os.path.dirname(CSVFileVolume[Sample][AcinusToLookAt-MaximumAcini*Sample]),'*.jpg'))[int(len(glob.glob(os.path.join(os.path.dirname(CSVFileVolume[Sample][AcinusToLookAt-MaximumAcini*Sample]),'*.jpg')))/2)])
-#~ 
-#~ print '________________________________________________________________________________'
+
+# plot both MeVisLab- and STEPanizer-Volumes in one plot
+plt.figure(num=None,figsize=(16,9))
+for Sample in range(len(Rat)):
+	plt.plot(range(MaximumAcini*Sample,MaximumAcini*(Sample+1)),
+		MeVisLabVolume[Sample],
+		color[Sample]+'--',
+		marker='*')
+	plt.plot(range(MaximumAcini*Sample,
+		MaximumAcini*(Sample+1)),
+		AcinarVolume[Sample],
+		color[Sample],
+		marker='o')
+plt.title('Volumes')
+plt.legend(['MeVisLab','STEPanizer'],loc='best')
+if SaveFigures:
+	plt.savefig('plot_stepanizervolumes.png',transparent=False)
+if TikZTheData:
+	tikz_save('plot_stepanizervolumes.tikz')
+
+import win32api
+win32api.MessageBox(0, 'Select one Acinus, I will then show you a slice of the selected acinus afterwards', 'Acinus Selection', 0x00001000)
+tellme('Select acinus to look at a slice\nStop with middle mouse button')
+
+AcinusToLookAt = int(round(plt.ginput(1,timeout=0)[0][0]))
+
+for Sample in range(len(Rat)):
+	if (AcinusToLookAt >= MaximumAcini*Sample) and (AcinusToLookAt < MaximumAcini*(Sample+1)):
+		print 'The selected Acinus',AcinusToLookAt,'corresponds to acinus',AcinusToLookAt-MaximumAcini*Sample,'of sample',WhichRat+Rat[Sample]
+		print 'This acinus can be found in the folder ',os.path.dirname(CSVFileVolume[Sample][AcinusToLookAt-MaximumAcini*Sample]),\
+			', which contains',\
+			len(glob.glob(os.path.join(os.path.dirname(CSVFileVolume[Sample][AcinusToLookAt-MaximumAcini*Sample]),'*.jpg'))),\
+			'.jpg files'
+		print 'We are opening',\
+			glob.glob(os.path.join(os.path.dirname(CSVFileVolume[Sample][AcinusToLookAt-MaximumAcini*Sample]),'*.jpg'))[int(len(glob.glob(os.path.join(os.path.dirname(CSVFileVolume[Sample][AcinusToLookAt-MaximumAcini*Sample]),'*.jpg')))/2)],\
+			'to look at.'
+		os.startfile(glob.glob(os.path.join(os.path.dirname(CSVFileVolume[Sample][AcinusToLookAt-MaximumAcini*Sample]),'*.jpg'))[int(len(glob.glob(os.path.join(os.path.dirname(CSVFileVolume[Sample][AcinusToLookAt-MaximumAcini*Sample]),'*.jpg')))/2)])
+
+print '________________________________________________________________________________'
 
 #~ # Plot the interesting stuff
 #~ # Plot MeVisLab- against STEPanizer-volumes
