@@ -196,9 +196,7 @@ for Sample in range(len(Rat)):
 					'|',"%04d" % (Interceptions),'Interceptions',\
 					'|',"%03d" % (AcinusTestPoints),'Points in Acinus',\
 					'|',"%03d" % (NonParenchymalPoints[Sample][Acinus]),'Nonparenchymal Points'
-			
-			LJKLK[Sample][Acinus] = Area_Vol
-			
+						
 			# Volume = AcinusTestPoints * Area_Vol * STEPanizerPixelSize_Vol * SliceNumber * TOMCATVoxelSize		
 			AcinarVolume[Sample][Acinus] = ((( AcinusTestPoints * Area_Vol * STEPanizerPixelSize_Vol * SliceNumber * TOMCATVoxelSize ) / ShrinkageFactor) / 1e12) # scaling volume to cm^3: http://is.gd/wbZ81O
 								
@@ -219,18 +217,9 @@ if ShrinkageFactor != 1:
 	print 'Calculated with a Shrinkagefactor of',ShrinkageFactor,'x'			
 print
 
-plt.figure()
-for Sample in range(len(Rat)):
-	plt.subplot(1,len(Rat),Sample)
-	plt.plot(AbsoluteSurface[Sample])
-
-plt.show()
-exit()
-
-
 print 'STEPanizer: Alveoli (Evelyne)'
 # Read data from each STEPanizer .csv-file and calculate the desired values
-Bridges = [[np.nan for Acinus in range(MaximumAcini)] for Sample in range(len(Rat))]
+Openings = [[np.nan for Acinus in range(MaximumAcini)] for Sample in range(len(Rat))]
 NumberOfAlveoli = [[np.nan for Acinus in range(MaximumAcini)] for Sample in range(len(Rat))]
 for Sample in range(len(Rat)):
 	if Beamtime[Sample] == '':
@@ -239,6 +228,7 @@ for Sample in range(len(Rat)):
 		print 'Sample',Beamtime[Sample] + '\R108C60' + Rat[Sample] + ': Reading',AssessedAcini[Sample],'.xls files.'
 		for CurrentFile in sorted(CSVFileAlveoli[Sample][:]):
 			Acinus = int(CurrentFile[CurrentFile.find('acinus')+len('acinus'):CurrentFile.find('acinus')+len('acinus')+2])
+			DisectorThickness = float(CurrentFile[CurrentFile.find('Thickness-')+len('Thickness-'):CurrentFile.find('Thickness-')+len('Thickness-')+3]) # from filename, in um
 			TotalSlices = len(glob.glob(os.path.join((os.path.join(SamplePath[Sample],'acinus'+ str("%02d" % (Acinus)),STEPanizerAlveoliDir)),'*.jpg')))
 			FileData = csv.reader(open(CurrentFile,'rb'),dialect=csv.excel_tab)
 			for line in FileData:
@@ -246,42 +236,53 @@ for Sample in range(len(Rat)):
 					if line[0] == 'Num 1':
 						Counts = int(line[3])
 					if line[0] == 'Pixel size:':
-						STEPanizerPixelSize_Acini = double(line[1])
+						STEPanizerPixelSize_Alveoli = double(line[1])				
 					if line[0] == 'a(p):':
-						Area_Acini = double(line[1])*STEPanizerPixelSize_Vol**2
+						Area_Alveoli = double(line[1])*STEPanizerPixelSize_Alveoli**2
 					if line[0] == 'l(p):':
-						LinePointLength_Alveoli = double(line[1])*STEPanizerPixelSize_Vol
+						LinePointLength_Alveoli = double(line[1])*STEPanizerPixelSize_Alveoli
 			
-			# Bridges = Something to do with the Counts
-			# Counts are all counted bridges. The bridges are half this number, since
-			# she counted from both sides. Evelyne alway counted every second image,
-			# we thus need to double her values.
-			Bridges[Sample][Acinus] = Counts # = round(round(Counts / 2 ) * 2 ) )
-			
+			# Counts are *all* counted bridges, (from a to b and from b to a). According 
+			# to Stefan, we thus have to double the disector volume. This is then the 
+			# volume density of the counts in said acinus.
+			# Evelyne did count every second image, but this is really only relevant for
+			# the volume of the acini. From her numbers we get the Count (=Openings) per
+			# volume. This is then multiplied by the volume of the acinus to get the number
+			# of alveoli in each acinus. The volume is taken from Davids Cavaglieri estimation
+			# above (AcinarVolume).
+			Openings[Sample][Acinus] = Counts / ( ( Area_Alveoli * DisectorThickness ) * 2 ) * 1e12
+			# DisectorThickness = um, Area_Alveoli = um^2 -> 10^12 um^3 = 1 cm^3: http://is.gd/Cr6kUL
+								
+			NumberOfAlveoli[Sample][Acinus] = \
+				Openings[Sample][Acinus] * AcinarVolume[Sample][Acinus]
+				
 			# Hsiah2010 p. 407:
 			# Counting the number of entrance rings in paired sections by the disector
 			# technique allows estimation of total number of alveoli in the lung N(a,L) (112, 113).
 			# N(a,L) is the product of the number of alveolar openings per unit parenchyma
 			# volume (Sn/Vp) with the volume density of parenchyma per unit lung volume VV(p,L)
 			# and the absolute lung volume:
-			# N(a,L,) = (Sn/Vp) * VV(p,L) * V(L) (Formula 17)
-			
-			NumberOfAlveoli[Sample][Acinus] = \
-				( Bridges[Sample][Acinus] / AcinarVolume[Sample][Acinus] ) * \
-				( AbsoluteParenchymalVolume[Sample] / AbsoluteAirspaceVolume[Sample] ) * \
-				RULVolume[Sample]
+			# N(a,L,) = (Sn/Vp) * VV(p,L) * V(L) (Formula 17)				
 
 			# Give out counted/assessed data if desired
 			if chatty:
 				print 'Acinus ' + str("%02d" % (Acinus)) +\
 					' | ' + str("%03d" % (TotalSlices)) + ' Files' +\
 					' | ' + str(Counts) + ' counts' +\
-					' | ' + str(Bridges[Sample][Acinus]) + ' bridges' +\
-					' | ' + str(NumberOfAlveoli[Sample][Acinus]) + ' alveoli'
+					' | ' + str(int(Openings[Sample][Acinus])) + ' Openings' +\
+					' | ' + str(int(NumberOfAlveoli[Sample][Acinus])) + ' alveoli'
 
 if ShrinkageFactor != 1:
 	print 'Calculated with a Shrinkagefactor of',ShrinkageFactor,'x'			
 print
+
+exit()
+
+
+
+
+
+
 
 print '________________________________________________________________________________'
 
@@ -647,42 +648,42 @@ print '_________________________________________________________________________
 #~ if TikZTheData:
 	#~ tikz_save('plot_acinarvolume_surfacedensity_absolutesurface.tikz')
 #~ 
-#~ # Plot Bridges vs. Volume (Evelyne vs. David)
+#~ # Plot Openings vs. Volume (Evelyne vs. David)
 #~ plt.figure(num=None,figsize=(16,9))
 #~ plt.subplots_adjust(hspace=1)
 #~ for Sample in range(len(Rat)):
 	#~ ax = plt.subplot(len(Rat),1,Sample+1)
-	#~ plt.scatter(range(MaximumAcini),Bridges[Sample],c='r')
+	#~ plt.scatter(range(MaximumAcini),Openings[Sample],c='r')
 	#~ plt.scatter(range(MaximumAcini),AcinarVolume[Sample],c='b')
-	#~ plt.title('Bridges ' + WhichRat + Rat[Sample] +': ' +\
-		#~ str(np.sum(np.ma.masked_array(Bridges[Sample],np.isnan(Bridges[Sample])))) +\
+	#~ plt.title('Openings ' + WhichRat + Rat[Sample] +': ' +\
+		#~ str(np.sum(np.ma.masked_array(Openings[Sample],np.isnan(Openings[Sample])))) +\
 		#~ ' (total)')
 	#~ # Shink plot to make space for the legend: http://stackoverflow.com/a/4701285/323100
 	#~ box = ax.get_position()
 	#~ ax.set_position([box.x0, box.y0, box.width * 0.75, box.height])		
-	#~ plt.legend(['Bridges (Evelyne) ','Volume (David)'],loc='best')
+	#~ plt.legend(['Openings (Evelyne) ','Volume (David)'],loc='best')
 	#~ plt.xlim([0,MaximumAcini])
 	#~ plt.xticks(arange(MaximumAcini))
 	#~ plt.ylim([0,None])
 	#~ plt.tight_layout()
 #~ if SaveFigures:
-	#~ plt.savefig('plot_bridges_vs_volume.png',transparent=False)
+	#~ plt.savefig('plot_Openings_vs_volume.png',transparent=False)
 #~ if TikZTheData:
-	#~ tikz_save('plot_bridges_vs_volume.tikz')
+	#~ tikz_save('plot_Openings_vs_volume.tikz')
 	#~ 
-#~ # Plot Bridges vs. Volume (Evelyne)
+#~ # Plot Openings vs. Volume (Evelyne)
 #~ plt.figure(num=None,figsize=(16,9))
 #~ for Sample in range(len(Rat)):
 	#~ plt.subplot(2,len(Rat),Sample)
-	#~ plt.plot(Bridges[Sample],marker='o')
-	#~ plt.title('Bridges ' + str(WhichRat) + str(Rat[Sample]))
+	#~ plt.plot(Openings[Sample],marker='o')
+	#~ plt.title('Openings ' + str(WhichRat) + str(Rat[Sample]))
 	#~ plt.subplot(2,len(Rat),Sample+len(Rat))
 	#~ plt.plot(NumberOfAlveoli[Sample],marker='o')
 	#~ plt.title('# of Alveoli ' + str(WhichRat) + str(Rat[Sample]))
 #~ if SaveFigures:
-	#~ plt.savefig('plot_bridges_and_number_of_acini.png',transparent=False)
+	#~ plt.savefig('plot_Openings_and_number_of_acini.png',transparent=False)
 #~ if TikZTheData:
-	#~ tikz_save('plot_bridges_and_number_of_acini.tikz')
+	#~ tikz_save('plot_Openings_and_number_of_acini.tikz')
 	#~ 
 
 # http://is.gd/JWhkjn
