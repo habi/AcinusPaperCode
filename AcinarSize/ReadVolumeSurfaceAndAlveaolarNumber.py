@@ -1,12 +1,12 @@
 # -*- coding: utf8 -*-
 
 from pylab import *
+import numpy as np
+from matplotlib2tikz import save as tikz_save
 import os
 import glob
 import csv
-import numpy as np
 import xlrd # from http://www.lexicon.net/sjmachin/xlrd.htm, to read XLS-Files (like the ones containing the lung volumes)
-from matplotlib2tikz import save as tikz_save
 import time
 
 def tellme(s):
@@ -16,6 +16,7 @@ def tellme(s):
 
 print "Hey ho, let's go: http://youtu.be/Q2Yb145eIIE !"
 print '________________________________________________________________________________'
+print
 
 Drive = 'R:\SLS'
 
@@ -23,14 +24,14 @@ if os.path.exists(Drive) == False:
 	print 'Cannot read ' + str(Drive) + '. Exiting!'
 	exit()
 
-verbose = False # set to 'False' to suppress some output.
+verbose = True # set to 'False' to suppress some output.
 PlotTheData = False # True/False switches between showing and not showing the plots at the end
 SaveFigures = False # save the plot to .png-Files
 TikZTheData = False # save the data to .tikz-Files to import into LaTeX
 TOMCATVoxelSize = 1.48
 SliceNumber = 10
-DisectorThickness = 5 # sklices
-ShrinkageFactor = 1
+DisectorThickness = 5 # slices
+ShrinkageFactor = 0.61 # Volume-Shrinkage-Factor = 61% with STD=5, calculated by Sébastien: Volume TOMCAT / Waterdisplacement
 color=['c','r','m','b','y'] # colors to use, so that all the plots match
 STEPanizerVolumeDir = 'voxelsize'+str(TOMCATVoxelSize)+'-every'+str(SliceNumber)+'slice'
 STEPanizerAlveoliDir = 'voxelsize'+str(TOMCATVoxelSize)+'-every'+str(SliceNumber)+'slice-DisectorThickness-' + str('%.2f' % round(DisectorThickness*TOMCATVoxelSize,2)) + 'um-or' + str(DisectorThickness) + 'slices'
@@ -55,10 +56,11 @@ AbsoluteAirspaceVolume = [ DatenblattStefan.cell(70+int(Sample),19).value for Sa
 AbsoluteAirspaceSurface = [ DatenblattStefan.cell(70+int(Sample),94).value for Sample in range(len(Rat)) ]
 
 for Sample in range(len(Rat)):
-	print WhichRat+Rat[Sample]+': - RUL volume =',np.round(RULVolume[Sample],decimals=3),'cm^3'
-	print (len(WhichRat+Rat[Sample])+2) * ' ' + '- Absolute parenchymal volume =',np.round(AbsoluteParenchymalVolume[Sample],decimals=3),'cm^2'
-	print (len(WhichRat+Rat[Sample])+2) * ' ' + '- Absolute airspace volume =',np.round(AbsoluteAirspaceVolume[Sample],decimals=3),'cm^2'
-	print (len(WhichRat+Rat[Sample])+2) * ' ' + '- Absolute airspace surface =',np.round(AbsoluteAirspaceSurface[Sample],decimals=3),'cm^2'
+	print WhichRat+Rat[Sample] + ': - RUL volume =',np.round(RULVolume[Sample],decimals=3),'cm^3'
+	print (len(WhichRat+Rat[Sample])+1) * ' ','- Absolute parenchymal volume =',np.round(AbsoluteParenchymalVolume[Sample],decimals=3),'cm^2'
+	print (len(WhichRat+Rat[Sample])+1) * ' ','- Absolute airspace volume =',np.round(AbsoluteAirspaceVolume[Sample],decimals=3),'cm^2'
+	print (len(WhichRat+Rat[Sample])+1) * ' ','- Absolute airspace surface =',np.round(AbsoluteAirspaceSurface[Sample],decimals=3),'cm^2'
+
 
 print
 print 'DatenblattStefan.xls: - Mean RUL volume is',np.round(np.mean(RULVolume),decimals=3),'cm^3.'
@@ -66,6 +68,7 @@ print '                      - Mean absolute parenchymal volume is',np.round(np.
 print '                      - Mean absolute airspace volume is',np.round(np.mean(AbsoluteAirspaceVolume),decimals=3),'cm^2.'
 print '                      - Mean absolute airspace surface is',np.round(np.mean(AbsoluteAirspaceSurface),decimals=3),'cm^2.'
 print '________________________________________________________________________________'
+print
 
 # Reading Alveolar Number data from XLS-File from Lilian/Stefan
 print 'Reading values from p:\doc\#Dev\AcinarSize\R108NumberofAlveoliDEF.xls'
@@ -77,6 +80,7 @@ print 'Rodriguez1987 (page 146) states a total of',NumberOfAciniRodriguez,'acini
 NumberOfAlveoliPerAcinusEstimated = NumberOfAlveoliLilian/NumberOfAciniRodriguez
 print 'Grossly estimated, we thus have around (=Lilian/Rodriguez)',int(round(NumberOfAlveoliPerAcinusEstimated)),'alveoli per acinus.'
 print '________________________________________________________________________________'
+print
 
 # See how many .csv-Files we actually have in the STEPanizer directories
 SamplePath = {}
@@ -142,11 +146,12 @@ for Sample in range(len(Rat)):
 	if Beamtime[Sample] == '':
 		print WhichRat + Rat[Sample] + ': not scanned'
 	else:
-		MeanMeVisLabVolume[Sample] = np.mean(np.ma.masked_array(MeVisLabVolume[Sample],np.isnan(MeVisLabVolume[Sample])))
+		MeanMeVisLabVolume[Sample] = np.mean(np.ma.masked_invalid(MeVisLabVolume[Sample]))
 		print WhichRat + Rat[Sample] + ':', MeanMeVisLabVolume[Sample], 'cm^3'
-print 'Mean acinar volume for all samples:', np.mean(np.ma.masked_array(MeanMeVisLabVolume,np.isnan(MeanMeVisLabVolume))), 'cm^3'
-print 'Standard deviation of the mean acinar volume for all samples:', np.std(np.ma.masked_array(MeanMeVisLabVolume,np.isnan(MeanMeVisLabVolume)))
+print 'Mean acinar volume for all samples:', np.mean(np.ma.masked_invalid(MeanMeVisLabVolume)), 'cm^3'
+print 'Standard deviation of the mean acinar volume for all samples:', np.std(np.ma.masked_invalid(MeanMeVisLabVolume))
 print '________________________________________________________________________________'
+print
 
 print 'STEPanizer: Volume (David)'
 # Read data from each STEPanizer .csv-file and calculate the desired values
@@ -188,9 +193,8 @@ for Sample in range(len(Rat)):
 				'|',"%03d" % (NonParenchymalPoints[Sample][Acinus]),'Nonparenchymal Points'
 					
 		# Volume = AcinusTestPoints * Area_Vol * STEPanizerPixelSize_Vol * SliceNumber * TOMCATVoxelSize		
-		AcinarVolume[Sample][Acinus] = (( AcinusTestPoints * Area_Vol * STEPanizerPixelSize_Vol * SliceNumber * TOMCATVoxelSize ) / 1e12) # scaling volume to cm^3: http://is.gd/wbZ81O
-		# AcinarVolume[Sample][Acinus] = AcinarVolume[Sample][Acinus] * ShrinkageFactor
-		
+		AcinarVolume[Sample][Acinus] = ((( AcinusTestPoints * Area_Vol * STEPanizerPixelSize_Vol * SliceNumber * TOMCATVoxelSize ) / ShrinkageFactor ) / 1e12 ) # scaling volume to cm^3: http://is.gd/wbZ81O	
+						
 		# Total of all points = AllAreaTestPoints_Vol (in file) * Total of slices
 		TotalTestPoints[Sample][Acinus] = AllAreaTestPoints_Vol * TotalSlices
 		
@@ -212,10 +216,10 @@ for Sample in range(len(Rat)):
 	if Beamtime[Sample] == '':
 		print WhichRat + Rat[Sample] + ': not scanned'
 	else:
-		MeanAcinarVolume[Sample] = np.mean(np.ma.masked_array(AcinarVolume[Sample],np.isnan(AcinarVolume[Sample])))
-		print WhichRat + Rat[Sample] + ':', MeanAcinarVolume[Sample], 'cm^3'
-print 'Mean acinar volume for all samples:', np.round(np.mean(np.ma.masked_array(MeanAcinarVolume,np.isnan(MeanAcinarVolume))),decimals=3), 'cm^3'
-print 'Standard deviation of the mean acinar volume for all samples:', np.std(np.ma.masked_array(MeanAcinarVolume,np.isnan(MeanAcinarVolume)))
+		MeanAcinarVolume[Sample] = np.mean(np.ma.masked_invalid(AcinarVolume[Sample]))
+		print WhichRat + Rat[Sample] + ':',MeanAcinarVolume[Sample],'cm^3'
+print 'Mean acinar volume (mean of *all* acini):',np.mean(np.ma.masked_invalid(AcinarVolume)),'cm^3, Standard deviation:',np.std(np.ma.masked_invalid(AcinarVolume))
+print 'Mean acinar volume (mean of means of each sample):', np.mean(np.ma.masked_invalid(MeanAcinarVolume)),'cm^3, Standard deviation:',np.std(np.ma.masked_invalid(MeanAcinarVolume))
 print
 
 # Absolute parenchymal Volume / mean acinar volume = Number of Acini
@@ -225,15 +229,15 @@ for Sample in range(len(Rat)):
 	if Beamtime[Sample] == '':
 		print WhichRat + Rat[Sample] + ' was not scanned'
 	else:
-		NumberOfAcini[Sample] = AbsoluteAirspaceVolume[Sample] / (MeanAcinarVolume[Sample])
+		NumberOfAcini[Sample] = AbsoluteAirspaceVolume[Sample] / MeanAcinarVolume[Sample]
 		print WhichRat + Rat[Sample],'contains',int(np.round(NumberOfAcini[Sample])),'acini'
 print 'Rodriguez1987 (page 146) states a total of',NumberOfAciniRodriguez,' acini for the whole rat lungs.'
-print 'We have a mean of',int(np.round(np.mean(np.ma.masked_array(NumberOfAcini,np.isnan(NumberOfAcini))))),'acini calculated for the whole lung.'
+print 'We have a mean of',int(np.round(np.mean(np.ma.masked_invalid(NumberOfAcini)))),' acini for the whole rat lungs.'
 print
 
 print 'STEPanizer: Alveoli (Evelyne)'
 # Read data from each STEPanizer .csv-file and calculate the desired values
-Openings = [[np.nan for Acinus in range(MaximumAcini)] for Sample in range(len(Rat))]
+AlveolarFraction = [[np.nan for Acinus in range(MaximumAcini)] for Sample in range(len(Rat))]
 NumberOfAlveoli = [[np.nan for Acinus in range(MaximumAcini)] for Sample in range(len(Rat))]
 for Sample in range(len(Rat)):
 	for CurrentFile in sorted(CSVFileAlveoli[Sample][:]):
@@ -256,16 +260,15 @@ for Sample in range(len(Rat)):
 		# to Stefan, we thus have to double the disector volume. This is then the 
 		# volume density of the counts in said acinus.
 		# Evelyne did count every second image, but this is really only relevant for
-		# the volume of the acini. From her numbers we get the Count (=Openings) per
-		# volume. This is then multiplied by the volume of the acinus to get the number
+		# the volume of the acini. From her numbers we get the Counts per volume (=AlveolarFraction).
+		# This is then multiplied by the volume of the acinus to get the number
 		# of alveoli in each acinus. The volume is taken from Davids Cavaglieri estimation
 		# above (AcinarVolume).
-		Openings[Sample][Acinus] = Counts / ( ( Area_Alveoli * DisectorThickness ) * 2 ) * 1e12
-		
+		AlveolarFraction[Sample][Acinus] = Counts / ( ( Area_Alveoli * ( DisectorThickness / ShrinkageFactor ) ) * 2 ) * 1e12 # Counts/cm^3
 		# DisectorThickness = um, Area_Alveoli = um^2 -> 10^12 um^3 = 1 cm^3: http://is.gd/Cr6kUL
 							
 		NumberOfAlveoli[Sample][Acinus] = \
-			Openings[Sample][Acinus] * AcinarVolume[Sample][Acinus]
+			AlveolarFraction[Sample][Acinus] * AcinarVolume[Sample][Acinus]
 			
 		# Hsiah2010 p. 407:
 		# Counting the number of entrance rings in paired sections by the disector
@@ -280,8 +283,15 @@ for Sample in range(len(Rat)):
 			print WhichRat + Rat[Sample] + ': Acinus', "%02d" % (Acinus),\
 				'| ' + str("%03d" % (TotalSlices)) + ' Files' +\
 				' | ' + str(Counts) + ' counts' +\
-				' | ' + str(int(Openings[Sample][Acinus])) + ' Openings' +\
+				' | ' + str(int(AlveolarFraction[Sample][Acinus])) + ' AlveolarFraction' +\
 				' | ' + str(int(NumberOfAlveoli[Sample][Acinus])) + ' alveoli'
+
+for Sample in range(len(Rat)):
+	if Beamtime[Sample]:
+		print WhichRat + Rat[Sample] + ': -',np.round(np.mean(np.ma.masked_invalid(AlveolarFraction[Sample]))),'Alveoli per cm^3 (Evelyne	)'
+		print (len(WhichRat + Rat[Sample])+1) * ' ','-',RULVolume[Sample],'cm^3 Volume (Stefan)'
+		print (len(WhichRat + Rat[Sample])+1) * ' ','-',np.round(np.mean(np.ma.masked_invalid(AlveolarFraction[Sample])) * RULVolume[Sample] / 1e6 ),' * 10^6 estimated alveoli for the whole lung.'
+print
 
 print 'Mean number of alveoli per acinus'
 MeanAlveolarNumber = [np.nan for Sample in range(len(Rat))]
@@ -289,12 +299,12 @@ for Sample in range(len(Rat)):
 	if Beamtime[Sample] == '':
 		print WhichRat + Rat[Sample] + ': not scanned'
 	else:
-		MeanAlveolarNumber[Sample] = np.mean(np.ma.masked_array(NumberOfAlveoli[Sample],np.isnan(NumberOfAlveoli[Sample])))
+		MeanAlveolarNumber[Sample] = np.mean(np.ma.masked_invalid(NumberOfAlveoli[Sample]))
 		print WhichRat + Rat[Sample] + ':', MeanAlveolarNumber[Sample]
-print 'Mean number of alveoli for all samples:', np.round(np.mean(np.ma.masked_array(NumberOfAlveoli,np.isnan(NumberOfAlveoli))))
-print 'Standard deviation of the mean number of alveoli for all samples:', np.std(np.ma.masked_array(NumberOfAlveoli,np.isnan(NumberOfAlveoli)))
+print 'Mean number of alveoli (mean of all samples):', np.round(np.mean(np.ma.masked_invalid(NumberOfAlveoli))),'Standard deviation:',np.std(np.ma.masked_invalid(NumberOfAlveoli))
+print 'Mean number of alveoli (mean of means of samples):', np.round(np.mean(np.ma.masked_invalid(MeanAlveolarNumber))),'Standard deviation:',np.std(np.ma.masked_invalid(MeanAlveolarNumber))
 print 'From estimation of Alveoli per Lung (Lilian/Stefan) and # of acini (Rodriguez) we calculate an estimated',int(round(NumberOfAlveoliPerAcinusEstimated)),'alveoli per acinus.'
-print 'Our number is thus',np.round(NumberOfAlveoliPerAcinusEstimated/np.mean(np.ma.masked_array(NumberOfAlveoli,np.isnan(NumberOfAlveoli))),decimals=3),'times smaller.'
+print 'Our number is thus',np.round(NumberOfAlveoliPerAcinusEstimated/np.mean(np.ma.masked_invalid(NumberOfAlveoli)),decimals=3),'times smaller.'
 print
 
 print 'Mean acinar surface'
@@ -303,10 +313,10 @@ for Sample in range(len(Rat)):
 	if Beamtime[Sample] == '':
 		print WhichRat + Rat[Sample] + ': not scanned'
 	else:
-		MeanAcinarSurface[Sample] = np.mean(np.ma.masked_array(AbsoluteSurface[Sample],np.isnan(AbsoluteSurface[Sample])))
+		MeanAcinarSurface[Sample] = np.mean(np.ma.masked_invalid(AbsoluteSurface[Sample]))
 		print WhichRat + Rat[Sample] + ':', MeanAcinarSurface[Sample], 'cm^2'
-print 'Mean acinar surface for all samples:',np.round(np.mean(np.ma.masked_array(MeanAcinarSurface,np.isnan(MeanAcinarSurface))),decimals=3), 'cm^2'
-print 'Standard deviation of the mean acinar surface for all samples:', np.std(np.ma.masked_array(MeanAcinarSurface,np.isnan(MeanAcinarSurface)))
+print 'Mean acinar surface for all samples:',np.round(np.mean(np.ma.masked_invalid(MeanAcinarSurface)),decimals=3), 'cm^2'
+print 'Standard deviation of the mean acinar surface for all samples:', np.std(np.ma.masked_invalid(MeanAcinarSurface))
 print
 
 # Number of Acini * Mean acinar Surface = Diffusionsurface
@@ -325,8 +335,8 @@ for Sample in range(len(Rat)):
 	print WhichRat + Rat[Sample] +':',np.round(AbsoluteAirspaceSurface[Sample],decimals=3),'cm^2'
 print
 print 'Stefans mean absolute airspace surface is',np.round(np.mean(AbsoluteAirspaceSurface),decimals=3),'cm^2.'
-print 'Our mean airspace surface is',np.round(np.mean(np.ma.masked_array(DiffusionSurface,np.isnan(DiffusionSurface))),decimals=3),\
-	'cm^2, approximately',np.round(np.mean(AbsoluteAirspaceSurface) / np.mean(np.ma.masked_array(DiffusionSurface,np.isnan(DiffusionSurface))),decimals=3),'x smaller.'
+print 'Our mean airspace surface is',np.round(np.mean(np.ma.masked_invalid(DiffusionSurface)),decimals=3),\
+	'cm^2, approximately',np.round(np.mean(AbsoluteAirspaceSurface) / np.mean(np.ma.masked_invalid(DiffusionSurface)),decimals=3),'x smaller.'
 print
 
 # MeVisLab volume compared to STEPanizer volume (STEPanizer/MeVisLab)
@@ -339,12 +349,13 @@ for Sample in range(len(Rat)):
 				if verbose:
 					print WhichRat + Rat[Sample],'Acinus',str(Acinus) + ':',STEPanizerMeVisLabDifference[Sample][Acinus]
 		if verbose:
-			print '(a mean of',np.round(np.mean(np.ma.masked_array(STEPanizerMeVisLabDifference[Sample],np.isnan(STEPanizerMeVisLabDifference[Sample]))),decimals=3),')'
+			print '(a mean of',np.round(np.mean(np.ma.masked_invalid(STEPanizerMeVisLabDifference[Sample])),decimals=3),')'
 	else:
 		if verbose:
 			print WhichRat + Rat[Sample],'was not scanned'
 
-print '________________________________________________________________________________'			
+print '________________________________________________________________________________'
+print
 print 'MeVisLab to STEPanizer-comparison'
 print 'Mean acinar volume'
 for Sample in range(len(Rat)):
@@ -359,6 +370,7 @@ print '_________________________________________________________________________
 print
 print 'Values for acinus.tex:'
 print 'add to preamble around line 76.'
+print '\\newcommand{\\shrinkagefactor}{' + str(ShrinkageFactor) + '} % Shrinkagefactor used for the calculation' 
 print '\\newcommand{\\numberofacini}{' + str(TotalAssessedAcini) + '}'
 print '\\newcommand{\\meantotalnumberofacini}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAcini))))) + '}'
 print '\\newcommand{\\meanacinarvolume}{' + str(np.mean(np.ma.masked_invalid(MeanAcinarVolume))) + '} % cm^3, (mean acinar volume)'
@@ -367,9 +379,17 @@ print '\\newcommand{\\meannumberofalveoli}{' + str(int(np.round(np.mean(np.ma.ma
 print '\\newcommand{\\difference}{' + str(+np.mean(np.ma.masked_invalid(STEPanizerMeVisLabDifference,))) + '} % X times bigger (acinar volumes STEPanizer/MeVisLab-volumes)'
 print '\\newcommand{\\acinarsurface}{' + str(np.mean(np.ma.masked_invalid(MeanAcinarSurface))) + '} % cm^2'
 print '\\newcommand{\\meanairspacesurface}{' + str(np.mean(np.ma.masked_invalid(DiffusionSurface))) + '} % cm^2'
-print '\\newcommand{\\airspacedifference}{' + str(np.round(np.mean(AbsoluteAirspaceSurface) / np.mean(np.ma.masked_array(DiffusionSurface,np.isnan(DiffusionSurface))),decimals=3)) + '} % times'
+print '\\newcommand{\\airspacedifference}{' + str(np.round(np.mean(AbsoluteAirspaceSurface) / np.mean(np.ma.masked_invalid(DiffusionSurface)),decimals=3)) + '} % times'
 print '________________________________________________________________________________'
 print 
+
+if ShrinkageFactor != 1:
+	print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+	print '!                                                        !'
+	print '!   All is calculated with a Shrinkagefactor of',100*ShrinkageFactor,'%   !'
+	print '!                                                        !'	
+	print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+print
 
 if PlotTheData == False:
 	exit()
@@ -527,6 +547,7 @@ for Sample in range(len(Rat)):
 		os.startfile(glob.glob(os.path.join(os.path.dirname(CSVFileVolume[Sample][AcinusToLookAt-MaximumAcini*Sample]),'*.jpg'))[int(len(glob.glob(os.path.join(os.path.dirname(CSVFileVolume[Sample][AcinusToLookAt-MaximumAcini*Sample]),'*.jpg')))/2)])
 
 print '________________________________________________________________________________'
+print
 
 # Plot the interesting stuff
 # Plot MeVisLab- against STEPanizer-volumes
@@ -654,42 +675,42 @@ if TikZTheData:
 #~ if TikZTheData:
 	#~ tikz_save('plot_acinarvolume_surfacedensity_absolutesurface.tikz')
 #~ 
-#~ # Plot Openings vs. Volume (Evelyne vs. David)
+#~ # Plot AlveolarFraction vs. Volume (Evelyne vs. David)
 #~ plt.figure(num=None,figsize=(16,9))
 #~ plt.subplots_adjust(hspace=1)
 #~ for Sample in range(len(Rat)):
 	#~ ax = plt.subplot(len(Rat),1,Sample+1)
-	#~ plt.scatter(range(MaximumAcini),Openings[Sample],c='r')
+	#~ plt.scatter(range(MaximumAcini),AlveolarFraction[Sample],c='r')
 	#~ plt.scatter(range(MaximumAcini),AcinarVolume[Sample],c='b')
-	#~ plt.title('Openings ' + WhichRat + Rat[Sample] +': ' +\
-		#~ str(np.sum(np.ma.masked_array(Openings[Sample],np.isnan(Openings[Sample])))) +\
+	#~ plt.title('AlveolarFraction ' + WhichRat + Rat[Sample] +': ' +\
+		#~ str(np.sum(np.ma.masked_invalid(AlveolarFraction[Sample]))) +\
 		#~ ' (total)')
 	#~ # Shink plot to make space for the legend: http://stackoverflow.com/a/4701285/323100
 	#~ box = ax.get_position()
 	#~ ax.set_position([box.x0, box.y0, box.width * 0.75, box.height])		
-	#~ plt.legend(['Openings (Evelyne) ','Volume (David)'],loc='best')
+	#~ plt.legend(['AlveolarFraction (Evelyne) ','Volume (David)'],loc='best')
 	#~ plt.xlim([0,MaximumAcini])
 	#~ plt.xticks(arange(MaximumAcini))
 	#~ plt.ylim([0,None])
 	#~ plt.tight_layout()
 #~ if SaveFigures:
-	#~ plt.savefig('plot_Openings_vs_volume.png',transparent=False)
+	#~ plt.savefig('plot_AlveolarFraction_vs_volume.png',transparent=False)
 #~ if TikZTheData:
-	#~ tikz_save('plot_Openings_vs_volume.tikz')
+	#~ tikz_save('plot_AlveolarFraction_vs_volume.tikz')
 	#~ 
-#~ # Plot Openings vs. Volume (Evelyne)
+#~ # Plot AlveolarFraction vs. Volume (Evelyne)
 #~ plt.figure(num=None,figsize=(16,9))
 #~ for Sample in range(len(Rat)):
 	#~ plt.subplot(2,len(Rat),Sample)
-	#~ plt.plot(Openings[Sample],marker='o')
-	#~ plt.title('Openings ' + str(WhichRat) + str(Rat[Sample]))
+	#~ plt.plot(AlveolarFraction[Sample],marker='o')
+	#~ plt.title('AlveolarFraction ' + str(WhichRat) + str(Rat[Sample]))
 	#~ plt.subplot(2,len(Rat),Sample+len(Rat))
 	#~ plt.plot(NumberOfAlveoli[Sample],marker='o')
 	#~ plt.title('# of Alveoli ' + str(WhichRat) + str(Rat[Sample]))
 #~ if SaveFigures:
-	#~ plt.savefig('plot_Openings_and_number_of_acini.png',transparent=False)
+	#~ plt.savefig('plot_AlveolarFraction_and_number_of_acini.png',transparent=False)
 #~ if TikZTheData:
-	#~ tikz_save('plot_Openings_and_number_of_acini.tikz')
+	#~ tikz_save('plot_AlveolarFraction_and_number_of_acini.tikz')
 	#~ 
 
 # http://is.gd/JWhkjn
@@ -703,7 +724,3 @@ if TikZTheData:
 # plt.show()
 
 plt.show()
-
-if ShrinkageFactor != 1:
-	print 'All is calculated with a Shrinkagefactor of',ShrinkageFactor,'x'			
-print
