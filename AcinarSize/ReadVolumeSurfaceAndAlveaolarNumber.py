@@ -8,6 +8,7 @@ import glob
 import csv
 import xlrd # from http://www.lexicon.net/sjmachin/xlrd.htm, to read XLS-Files (like the ones containing the lung volumes)
 import time
+import fileinput
 
 def tellme(s):
     print s
@@ -24,14 +25,14 @@ if os.path.exists(Drive) == False:
 	print 'Cannot read ' + str(Drive) + '. Exiting!'
 	exit()
 
-verbose = True # set to 'False' to suppress some output.
+verbose = False # set to 'False' to suppress some output.
 PlotTheData = False # True/False switches between showing and not showing the plots at the end
 SaveFigures = False # save the plot to .png-Files
 TikZTheData = False # save the data to .tikz-Files to import into LaTeX
 TOMCATVoxelSize = 1.48
 SliceNumber = 10
 DisectorThickness = 5 # slices
-ShrinkageFactor = 0.61 # Volume-Shrinkage-Factor = 61% with STD=5, calculated by Sébastien: Volume TOMCAT / Waterdisplacement
+ShrinkageFactor = 0.62 # Volume-Shrinkage-Factor = 61% with STD=5, calculated by Sébastien: Volume TOMCAT / Waterdisplacement
 color=['c','r','m','b','y'] # colors to use, so that all the plots match
 STEPanizerVolumeDir = 'voxelsize'+str(TOMCATVoxelSize)+'-every'+str(SliceNumber)+'slice'
 STEPanizerAlveoliDir = 'voxelsize'+str(TOMCATVoxelSize)+'-every'+str(SliceNumber)+'slice-DisectorThickness-' + str('%.2f' % round(DisectorThickness*TOMCATVoxelSize,2)) + 'um-or' + str(DisectorThickness) + 'slices'
@@ -232,7 +233,7 @@ for Sample in range(len(Rat)):
 		NumberOfAcini[Sample] = AbsoluteAirspaceVolume[Sample] / MeanAcinarVolume[Sample]
 		print WhichRat + Rat[Sample],'contains',int(np.round(NumberOfAcini[Sample])),'acini'
 print 'Rodriguez1987 (page 146) states a total of',NumberOfAciniRodriguez,' acini for the whole rat lungs.'
-print 'We have a mean of',int(np.round(np.mean(np.ma.masked_invalid(NumberOfAcini)))),' acini for the whole rat lungs.'
+print 'We have a mean of',int(np.round(np.mean(np.ma.masked_invalid(NumberOfAcini)))),'acini for the whole rat lungs.'
 print
 
 print 'STEPanizer: Alveoli (Evelyne)'
@@ -366,10 +367,12 @@ for Sample in range(len(Rat)):
 		
 print 'The mean of each and every difference (STEPanizer-/MeVisLab-volume) is',np.round(np.mean(np.ma.masked_invalid(STEPanizerMeVisLabDifference)),decimals=3),'times bigger'
 
+
+# Output
+# Give out values to command line
 print '________________________________________________________________________________'
 print
-print 'Values for acinus.tex:'
-print 'add to preamble around line 76.'
+print 'The data below has been written to the preamble of "acinus.tex", around line 56:'
 print '\\newcommand{\\shrinkagefactor}{' + str(ShrinkageFactor) + '} % Shrinkagefactor used for the calculation' 
 print '\\newcommand{\\numberofacini}{' + str(TotalAssessedAcini) + '}'
 print '\\newcommand{\\meantotalnumberofacini}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAcini))))) + '}'
@@ -381,7 +384,34 @@ print '\\newcommand{\\acinarsurface}{' + str(np.mean(np.ma.masked_invalid(MeanAc
 print '\\newcommand{\\meanairspacesurface}{' + str(np.mean(np.ma.masked_invalid(DiffusionSurface))) + '} % cm^2'
 print '\\newcommand{\\airspacedifference}{' + str(np.round(np.mean(AbsoluteAirspaceSurface) / np.mean(np.ma.masked_invalid(DiffusionSurface)),decimals=3)) + '} % times'
 print '________________________________________________________________________________'
-print 
+print
+
+# Write the data as variables directly to acinus.tex, so we don't have to copy-paste it all the time...
+# The replacement stuff comes from http://is.gd/LIYXmb
+for line in fileinput.FileInput('p:\\doc\\#Docs\\AcinusPaper\\acinus.tex',inplace=1):
+	if '\\newcommand{\\shrinkagefactor}{' in line:
+		print '\\newcommand{\\shrinkagefactor}{' + str(ShrinkageFactor) + '} % Shrinkagefactor used for the calculation' 
+	elif '\\newcommand{\\numberofacini}{' in line:
+		print '\\newcommand{\\numberofacini}{' + str(TotalAssessedAcini) + '}'
+	elif '\\newcommand{\\meantotalnumberofacini}{' in line:
+		print '\\newcommand{\\meantotalnumberofacini}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAcini))))) + '}'
+	elif '\\newcommand{\\meanacinarvolume}{' in line:
+		print '\\newcommand{\\meanacinarvolume}{' + str(np.mean(np.ma.masked_invalid(MeanAcinarVolume))) + '} % cm^3, (mean acinar volume)'
+	elif '\\newcommand{\\std}{' in line:
+		print '\\newcommand{\\std}{' + str(np.std(np.ma.masked_invalid(MeanAcinarVolume))) + '} % (Standard deviation of acinar volumes)'
+	elif '\\newcommand{\\meannumberofalveoli}{' in line:
+		print '\\newcommand{\\meannumberofalveoli}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAlveoli))))) + '} % (Mean number of alveoli per acinus)'
+	elif '\\newcommand{\\difference}{' in line:
+		print '\\newcommand{\\difference}{' + str(+np.mean(np.ma.masked_invalid(STEPanizerMeVisLabDifference,))) + '} % X times bigger (acinar volumes STEPanizer/MeVisLab-volumes)'
+	elif '\\newcommand{\\acinarsurface}{' in line:
+		print '\\newcommand{\\acinarsurface}{' + str(np.mean(np.ma.masked_invalid(MeanAcinarSurface))) + '} % cm^2'
+	elif '\\newcommand{\\meanairspacesurface}{' in line:
+		print '\\newcommand{\\meanairspacesurface}{' + str(np.mean(np.ma.masked_invalid(DiffusionSurface))) + '} % cm^2'
+	elif '\\newcommand{\\airspacedifference}{' in line:
+		print '\\newcommand{\\airspacedifference}{' + str(np.round(np.mean(AbsoluteAirspaceSurface) / np.mean(np.ma.masked_invalid(DiffusionSurface)),decimals=3)) + '} % times'
+	else:
+		print line, # the ',' at the end prevents a newline
+
 
 if ShrinkageFactor != 1:
 	print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
