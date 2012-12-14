@@ -19,16 +19,23 @@ print "Hey ho, let's go: http://youtu.be/Q2Yb145eIIE !"
 print '________________________________________________________________________________'
 print
 
+
+########################################################################
+#                                                                      #
+#	SETUP                                                              #
+#                                                                      #
+########################################################################
+
 Drive = 'R:\SLS'
 
 if os.path.exists(Drive) == False:
 	print 'Cannot read ' + str(Drive) + '. Exiting!'
 	exit()
 
-verbose = True # set to 'False' to suppress some output.
+verbose = False # set to 'False' to suppress some output.
 PlotTheData = True # True/False switches between showing and not showing the plots at the end
-SaveFigures = False # save the plot to .png-Files
-TikZTheData = False # save the data to .tikz-Files to import into LaTeX
+SaveFigures = True # save the plot to .png-Files
+TikZTheData = True # save the data to .tikz-Files to import into LaTeX
 TOMCATVoxelSize = 1.48
 SliceNumber = 10
 DisectorThickness = 5 # slices
@@ -47,6 +54,12 @@ Beamtime = ['','2010c','','2009f\mrg','2009f\mrg'] # obviously no Beamtime for A
 		#~ bar.append(SOME EXPRESSION)
 #~ # one should (and as seen below can) use
 	#~ bar = [SOME EXPRESSION for item in some_iterable]
+	
+########################################################################
+#                                                                      #
+#	READING DATA                                                       #
+#                                                                      #
+########################################################################	
 
 # Reading Volume Data of RUL from Stefans Data-File
 print 'Reading values from p:\doc\#Dev\AcinarSize\DatenblattStefan.xls'
@@ -139,8 +152,6 @@ for Sample in range(len(Rat)):
 		AcinarVolumeMeVisLab[Sample][Acinus] = float(CurrentFile[CurrentFile.find('volume')+len('volume'):CurrentFile.find('.pixelsize')])/1000 # normalize ul to cm^3: http://is.gd/XxU3Ei
 		if verbose:
 			print WhichRat + Rat[Sample] + ': Acinus',str(Acinus) + ', Volume =',AcinarVolumeMeVisLab[Sample][Acinus],'cm^3'
-	print '---'
-print
 
 print 'Reading STEPanizer, volumes (David)'
 # Read data from each STEPanizer .csv-file and calculate the desired values
@@ -197,127 +208,7 @@ for Sample in range(len(Rat)):
 		
 		# Absolute Surface = Surface density * acinar volume
 		AbsoluteSurface[Sample][Acinus] = SurfaceDensity[Sample][Acinus] * AcinarVolumeSTEPanizer[Sample][Acinus]
-		
-	print '---'
 	
-print 'Mean acinar volume MeVisLab'
-AcinarVolumeMeanMeVisLab = [np.nan for Sample in range(len(Rat))]
-AcinarVolumeSTDMeVisLab = [np.nan for Sample in range(len(Rat))]
-for Sample in range(len(Rat)):
-	if Beamtime[Sample] == '':
-		print WhichRat + Rat[Sample] + ': not scanned'
-	else:
-		AcinarVolumeMeanMeVisLab[Sample] = np.mean(np.ma.masked_invalid(AcinarVolumeMeVisLab[Sample]))
-		AcinarVolumeSTDMeVisLab[Sample] = np.std(np.ma.masked_invalid(AcinarVolumeMeVisLab[Sample]))
-		print WhichRat + Rat[Sample] + ':', AcinarVolumeMeanMeVisLab[Sample], 'cm^3'
-print 'Mean acinar volume for all samples:', np.mean(np.ma.masked_invalid(AcinarVolumeMeanMeVisLab)), 'cm^3'
-print 'Standard deviation of the mean acinar volume for all samples:', np.std(np.ma.masked_invalid(AcinarVolumeMeanMeVisLab))
-print '________________________________________________________________________________'
-print
-
-print 'Mean acinar volume STEPanizer'
-AcinarVolumeMeanSTEPanizer = [np.nan for Sample in range(len(Rat))]
-AcinarVolumeSTDSTEPanizer = [np.nan for Sample in range(len(Rat))]
-for Sample in range(len(Rat)):
-	if Beamtime[Sample] == '':
-		print WhichRat + Rat[Sample] + ': not scanned'
-	else:
-		AcinarVolumeMeanSTEPanizer[Sample] = np.mean(np.ma.masked_invalid(AcinarVolumeSTEPanizer[Sample]))
-		AcinarVolumeSTDSTEPanizer[Sample] = np.std(np.ma.masked_invalid(AcinarVolumeSTEPanizer[Sample]))
-		print WhichRat + Rat[Sample] + ':',AcinarVolumeMeanSTEPanizer[Sample],'cm^3'
-print 'Mean acinar volume (mean of *all* acini):',np.mean(np.ma.masked_invalid(AcinarVolumeSTEPanizer)),'cm^3, Standard deviation:',np.std(np.ma.masked_invalid(AcinarVolumeSTEPanizer))
-print 'Mean acinar volume (mean of means of each sample):', np.mean(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer)),'cm^3, Standard deviation:',np.std(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer))
-print
-
-print '________________________________________________________________________________'
-print '__________________________REMOVING OUTLIERS_____________________________________'
-
-#~ for number in range(10):
-	#~ if not (3 <= number <= 7):
-		#~ print number
-
-# Remove Outliers if > (mean +- BiggerThan*STD)
-BiggerThan = 2
-print 'Removing outliers if larger or smaller than mean +-',BiggerThan,'*STD'
-for Sample in range(len(Rat)):
-	for Acinus in range(MaximumAcini):
-		if not np.isnan(AcinarVolumeSTEPanizer[Sample][Acinus]):
-			if not (
-				AcinarVolumeMeanSTEPanizer[Sample] - ( BiggerThan * AcinarVolumeSTDSTEPanizer[Sample] )
-				<=
-				AcinarVolumeSTEPanizer[Sample][Acinus]
-				<=
-				AcinarVolumeMeanSTEPanizer[Sample] + ( BiggerThan * AcinarVolumeSTDSTEPanizer[Sample] )
-				):
-				print 'STEPanizer'
-				print WhichRat + Rat[Sample] + ', Acinus',Acinus,\
-					'volume:',np.round(AcinarVolumeSTEPanizer[Sample][Acinus],decimals=5),\
-					'is larger than',\
-					np.round(AcinarVolumeMeanSTEPanizer[Sample] + ( BiggerThan * AcinarVolumeSTDSTEPanizer[Sample] ),decimals=5),\
-					'or smaller than',\
-					np.round(AcinarVolumeMeanSTEPanizer[Sample] - ( BiggerThan * AcinarVolumeSTDSTEPanizer[Sample] ),decimals=5),\
-					'thus setting to NaN'
-				AcinarVolumeSTEPanizer[Sample][Acinus] = np.nan
-			if not (
-				AcinarVolumeMeanMeVisLab[Sample] - ( BiggerThan * AcinarVolumeSTDMeVisLab[Sample] )
-				<=
-				AcinarVolumeMeVisLab[Sample][Acinus]
-				<=
-				AcinarVolumeMeanMeVisLab[Sample] + ( BiggerThan * AcinarVolumeSTDMeVisLab[Sample] )
-				):
-				print 'MeVisLab'
-				print WhichRat + Rat[Sample] + ', Acinus',Acinus,\
-					'volume:',np.round(AcinarVolumeMeVisLab[Sample][Acinus],decimals=5),\
-					'is larger than',\
-					np.round(AcinarVolumeMeanMeVisLab[Sample] + ( BiggerThan * AcinarVolumeSTDMeVisLab[Sample] ),decimals=5),\
-					'or smaller than',\
-					np.round(AcinarVolumeMeanMeVisLab[Sample] - ( BiggerThan * AcinarVolumeSTDMeVisLab[Sample] ),decimals=5),\
-					'thus setting to NaN'
-				AcinarVolumeMeVisLab[Sample][Acinus] = np.nan
-print '__________________________REMOVING OUTLIERS_____________________________________'
-print '________________________________________________________________________________'
-
-print 'Mean acinar volume MeVisLab'
-AcinarVolumeMeanMeVisLab = [np.nan for Sample in range(len(Rat))]
-for Sample in range(len(Rat)):
-	if Beamtime[Sample] == '':
-		print WhichRat + Rat[Sample] + ': not scanned'
-	else:
-		AcinarVolumeMeanMeVisLab[Sample] = np.mean(np.ma.masked_invalid(AcinarVolumeMeVisLab[Sample]))
-		print WhichRat + Rat[Sample] + ':', AcinarVolumeMeanMeVisLab[Sample], 'cm^3'
-print 'Mean acinar volume for all samples:', np.mean(np.ma.masked_invalid(AcinarVolumeMeanMeVisLab)), 'cm^3'
-print 'Standard deviation of the mean acinar volume for all samples:', np.std(np.ma.masked_invalid(AcinarVolumeMeanMeVisLab))
-print '________________________________________________________________________________'
-print
-
-print 'Mean acinar volume STEPanizer'
-AcinarVolumeMeanSTEPanizer = [np.nan for Sample in range(len(Rat))]
-for Sample in range(len(Rat)):
-	if Beamtime[Sample] == '':
-		print WhichRat + Rat[Sample] + ': not scanned'
-	else:
-		AcinarVolumeMeanSTEPanizer[Sample] = np.mean(np.ma.masked_invalid(AcinarVolumeSTEPanizer[Sample]))
-		print WhichRat + Rat[Sample] + ':',AcinarVolumeMeanSTEPanizer[Sample],'cm^3'
-print 'Mean acinar volume (mean of *all* acini):',np.mean(np.ma.masked_invalid(AcinarVolumeSTEPanizer)),'cm^3, Standard deviation:',np.std(np.ma.masked_invalid(AcinarVolumeSTEPanizer))
-print 'Mean acinar volume (mean of means of each sample):', np.mean(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer)),'cm^3, Standard deviation:',np.std(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer))
-print
-
-
-exit()
-
-# Absolute parenchymal Volume / mean acinar volume = Number of Acini
-print 'Number of acini (= absolute airspace volume from stefan / mean acinar volume)'
-NumberOfAcini = [np.nan for Sample in range(len(Rat))]
-for Sample in range(len(Rat)):
-	if Beamtime[Sample] == '':
-		print WhichRat + Rat[Sample] + ' was not scanned'
-	else:
-		NumberOfAcini[Sample] = AbsoluteAirspaceVolume[Sample] / AcinarVolumeMeanSTEPanizer[Sample]
-		print WhichRat + Rat[Sample],'contains',int(np.round(NumberOfAcini[Sample])),'acini'
-print 'Rodriguez1987 (page 146) states a total of',NumberOfAciniRodriguez,' acini for the whole rat lungs.'
-print 'We have a mean of',int(np.round(np.mean(np.ma.masked_invalid(NumberOfAcini)))),'acini for the whole rat lungs.'
-print
-
 print 'Reading STEPanizer, number of alveoli (Evelyne)'
 # Read data from each STEPanizer .csv-file and calculate the desired values
 AlveolarFraction = [[np.nan for Acinus in range(MaximumAcini)] for Sample in range(len(Rat))]
@@ -368,6 +259,120 @@ for Sample in range(len(Rat)):
 				' | ' + str(Counts) + ' counts' +\
 				' | ' + str(int(AlveolarFraction[Sample][Acinus])) + ' AlveolarFraction' +\
 				' | ' + str(int(NumberOfAlveoli[Sample][Acinus])) + ' alveoli'
+				
+########################################################################
+#                                                                      #
+#	CALCULATIONG DATA                                                  #
+#                                                                      #
+########################################################################
+	
+print 'Mean acinar volume MeVisLab'
+AcinarVolumeMeanMeVisLab = [np.nan for Sample in range(len(Rat))]
+AcinarVolumeSTDMeVisLab = [np.nan for Sample in range(len(Rat))]
+for Sample in range(len(Rat)):
+	if Beamtime[Sample] == '':
+		print WhichRat + Rat[Sample] + ': not scanned'
+	else:
+		AcinarVolumeMeanMeVisLab[Sample] = np.mean(np.ma.masked_invalid(AcinarVolumeMeVisLab[Sample]))
+		AcinarVolumeSTDMeVisLab[Sample] = np.std(np.ma.masked_invalid(AcinarVolumeMeVisLab[Sample]))
+		print WhichRat + Rat[Sample] + ':', AcinarVolumeMeanMeVisLab[Sample], 'cm^3'
+print 'Mean acinar volume for all samples:', np.mean(np.ma.masked_invalid(AcinarVolumeMeanMeVisLab)), 'cm^3'
+print 'Standard deviation of the mean acinar volume for all samples:', np.std(np.ma.masked_invalid(AcinarVolumeMeanMeVisLab))
+print '________________________________________________________________________________'
+print
+
+print 'Mean acinar volume STEPanizer'
+AcinarVolumeMeanSTEPanizer = [np.nan for Sample in range(len(Rat))]
+AcinarVolumeSTDSTEPanizer = [np.nan for Sample in range(len(Rat))]
+for Sample in range(len(Rat)):
+	if Beamtime[Sample] == '':
+		print WhichRat + Rat[Sample] + ': not scanned'
+	else:
+		AcinarVolumeMeanSTEPanizer[Sample] = np.mean(np.ma.masked_invalid(AcinarVolumeSTEPanizer[Sample]))
+		AcinarVolumeSTDSTEPanizer[Sample] = np.std(np.ma.masked_invalid(AcinarVolumeSTEPanizer[Sample]))
+		print WhichRat + Rat[Sample] + ':',AcinarVolumeMeanSTEPanizer[Sample],'cm^3'
+print 'Mean acinar volume (mean of *all* acini):',np.mean(np.ma.masked_invalid(AcinarVolumeSTEPanizer)),'cm^3, Standard deviation:',np.std(np.ma.masked_invalid(AcinarVolumeSTEPanizer))
+print 'Mean acinar volume (mean of means of each sample):', np.mean(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer)),'cm^3, Standard deviation:',np.std(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer))
+print
+
+# Remove Outlier if > (mean +- BiggerThan*STD)
+BiggerThan = 2
+print 'Removing outliers if larger or smaller than mean +-',BiggerThan,'*STD'
+for Sample in range(len(Rat)):
+	for Acinus in range(MaximumAcini):
+		if not np.isnan(AcinarVolumeSTEPanizer[Sample][Acinus]):
+			if not (
+				AcinarVolumeMeanSTEPanizer[Sample] - ( BiggerThan * AcinarVolumeSTDSTEPanizer[Sample] )
+				<=
+				AcinarVolumeSTEPanizer[Sample][Acinus]
+				<=
+				AcinarVolumeMeanSTEPanizer[Sample] + ( BiggerThan * AcinarVolumeSTDSTEPanizer[Sample] )
+				):
+				print 'STEPanizer'
+				print WhichRat + Rat[Sample] + ', Acinus',Acinus,\
+					'volume:',np.round(AcinarVolumeSTEPanizer[Sample][Acinus],decimals=5),\
+					'is larger than',\
+					np.round(AcinarVolumeMeanSTEPanizer[Sample] + ( BiggerThan * AcinarVolumeSTDSTEPanizer[Sample] ),decimals=5),\
+					'or smaller than',\
+					np.round(AcinarVolumeMeanSTEPanizer[Sample] - ( BiggerThan * AcinarVolumeSTDSTEPanizer[Sample] ),decimals=5),\
+					'thus setting to NaN'
+				AcinarVolumeSTEPanizer[Sample][Acinus] = np.nan
+			if not (
+				AcinarVolumeMeanMeVisLab[Sample] - ( BiggerThan * AcinarVolumeSTDMeVisLab[Sample] )
+				<=
+				AcinarVolumeMeVisLab[Sample][Acinus]
+				<=
+				AcinarVolumeMeanMeVisLab[Sample] + ( BiggerThan * AcinarVolumeSTDMeVisLab[Sample] )
+				):
+				print 'MeVisLab'
+				print WhichRat + Rat[Sample] + ', Acinus',Acinus,\
+					'volume:',np.round(AcinarVolumeMeVisLab[Sample][Acinus],decimals=5),\
+					'is larger than',\
+					np.round(AcinarVolumeMeanMeVisLab[Sample] + ( BiggerThan * AcinarVolumeSTDMeVisLab[Sample] ),decimals=5),\
+					'or smaller than',\
+					np.round(AcinarVolumeMeanMeVisLab[Sample] - ( BiggerThan * AcinarVolumeSTDMeVisLab[Sample] ),decimals=5),\
+					'thus setting to NaN'
+				AcinarVolumeMeVisLab[Sample][Acinus] = np.nan
+print '________________________________________________________________________________'
+
+print 'After removing the outliers, we now have a'
+print 'Mean acinar volume MeVisLab'
+AcinarVolumeMeanMeVisLab = [np.nan for Sample in range(len(Rat))]
+for Sample in range(len(Rat)):
+	if Beamtime[Sample] == '':
+		print WhichRat + Rat[Sample] + ': not scanned'
+	else:
+		AcinarVolumeMeanMeVisLab[Sample] = np.mean(np.ma.masked_invalid(AcinarVolumeMeVisLab[Sample]))
+		print WhichRat + Rat[Sample] + ':', AcinarVolumeMeanMeVisLab[Sample], 'cm^3'
+print 'Mean acinar volume for all samples:', np.mean(np.ma.masked_invalid(AcinarVolumeMeanMeVisLab)), 'cm^3'
+print 'Standard deviation of the mean acinar volume for all samples:', np.std(np.ma.masked_invalid(AcinarVolumeMeanMeVisLab))
+print '________________________________________________________________________________'
+print
+
+print 'Mean acinar volume STEPanizer'
+AcinarVolumeMeanSTEPanizer = [np.nan for Sample in range(len(Rat))]
+for Sample in range(len(Rat)):
+	if Beamtime[Sample] == '':
+		print WhichRat + Rat[Sample] + ': not scanned'
+	else:
+		AcinarVolumeMeanSTEPanizer[Sample] = np.mean(np.ma.masked_invalid(AcinarVolumeSTEPanizer[Sample]))
+		print WhichRat + Rat[Sample] + ':',AcinarVolumeMeanSTEPanizer[Sample],'cm^3'
+print 'Mean acinar volume (mean of *all* acini):',np.mean(np.ma.masked_invalid(AcinarVolumeSTEPanizer)),'cm^3, Standard deviation:',np.std(np.ma.masked_invalid(AcinarVolumeSTEPanizer))
+print 'Mean acinar volume (mean of means of each sample):', np.mean(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer)),'cm^3, Standard deviation:',np.std(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer))
+print
+
+# Absolute parenchymal Volume / mean acinar volume = Number of Acini
+print 'Number of acini (= absolute airspace volume from stefan / mean acinar volume)'
+NumberOfAcini = [np.nan for Sample in range(len(Rat))]
+for Sample in range(len(Rat)):
+	if Beamtime[Sample] == '':
+		print WhichRat + Rat[Sample] + ' was not scanned'
+	else:
+		NumberOfAcini[Sample] = AbsoluteAirspaceVolume[Sample] / AcinarVolumeMeanSTEPanizer[Sample]
+		print WhichRat + Rat[Sample],'contains',int(np.round(NumberOfAcini[Sample])),'acini'
+print 'Rodriguez1987 (page 146) states a total of',NumberOfAciniRodriguez,' acini for the whole rat lungs.'
+print 'We have a mean of',int(np.round(np.mean(np.ma.masked_invalid(NumberOfAcini)))),'acini for the whole rat lungs.'
+print
 
 for Sample in range(len(Rat)):
 	if Beamtime[Sample]:
@@ -457,7 +462,7 @@ print 'The data below has been written to the preamble of "acinus.tex", around l
 print '\\newcommand{\\shrinkagefactor}{' + str(ShrinkageFactor) + '} % Shrinkagefactor used for the calculation' 
 print '\\newcommand{\\numberofacini}{' + str(TotalAssessedAcini) + '}'
 print '\\newcommand{\\meantotalnumberofacini}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAcini))))) + '}'
-print '\\newcommand{\\AcinarVolumeMeanSTEPanizer}{' + str(np.mean(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer))) + '} % cm^3, (mean acinar volume)'
+print '\\newcommand{\\meanacinarvolume}{' + str(np.mean(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer))) + '} % cm^3, (mean acinar volume)'
 print '\\newcommand{\\std}{' + str(np.std(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer))) + '} % (Standard deviation of acinar volumes)'
 print '\\newcommand{\\meannumberofalveoli}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAlveoli))))) + '} % (Mean number of alveoli per acinus)'
 print '\\newcommand{\\difference}{' + str(+np.mean(np.ma.masked_invalid(STEPanizerMeVisLabDifference,))) + '} % X times bigger (acinar volumes STEPanizer/MeVisLab-volumes)'
@@ -476,8 +481,8 @@ for line in fileinput.FileInput('p:\\doc\\#Docs\\AcinusPaper\\acinus.tex',inplac
 		print '\\newcommand{\\numberofacini}{' + str(TotalAssessedAcini) + '}'
 	elif '\\newcommand{\\meantotalnumberofacini}{' in line:
 		print '\\newcommand{\\meantotalnumberofacini}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAcini))))) + '}'
-	elif '\\newcommand{\\AcinarVolumeMeanSTEPanizer}{' in line:
-		print '\\newcommand{\\AcinarVolumeMeanSTEPanizer}{' + str(np.mean(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer))) + '} % cm^3, (mean acinar volume)'
+	elif '\\newcommand{\\meanacinarvolume}{' in line:
+		print '\\newcommand{\\meanacinarvolume}{' + str(np.mean(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer))) + '} % cm^3, (mean acinar volume)'
 	elif '\\newcommand{\\std}{' in line:
 		print '\\newcommand{\\std}{' + str(np.std(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer))) + '} % (Standard deviation of acinar volumes)'
 	elif '\\newcommand{\\meannumberofalveoli}{' in line:
@@ -520,17 +525,7 @@ for Sample in range(len(Rat)):
 PlotNormalizedMeVisLabVolume = [float(i)/max(PlotMeVisLabVolume) for i in PlotMeVisLabVolume]
 PlotNormalizedSTEPanizerVolume = [float(i)/max(PlotSTEPAnizerVolume) for i in PlotSTEPAnizerVolume]
 
-
-
-
-
-
-
-
-
-
-
-# Plot all volume for the samples
+# Plot volumes for all samples
 plt.figure(num=None,figsize=(16,9))
 for Sample in range(len(Rat)):
 	if Beamtime[Sample]:
@@ -541,11 +536,11 @@ for Sample in range(len(Rat)):
 		plt.axhline(np.mean(np.ma.masked_invalid(AcinarVolumeMeVisLab[Sample])),color='c',linestyle='dashed',linewidth=2,label='MeVisLab mean +- 3xSTD') # no x-range necessary
 		plt.axhline((np.mean(np.ma.masked_invalid(AcinarVolumeMeVisLab[Sample]))+(3*np.std(np.ma.masked_invalid(AcinarVolumeMeVisLab[Sample])))),color='c',linestyle='dashed',alpha=0.5)
 		plt.axhline((np.mean(np.ma.masked_invalid(AcinarVolumeMeVisLab[Sample]))-(3*np.std(np.ma.masked_invalid(AcinarVolumeMeVisLab[Sample])))),color='c',linestyle='dashed',alpha=0.5)
-		plt.title(WhichRat+Rat[Sample] + 'MeVisLab (' + str(AssessedAcini[Sample]) +')')			
+		plt.title(WhichRat+Rat[Sample] + '\nMeVisLab (' + str(AssessedAcini[Sample]) +')')			
 		if Sample == 0:
 			plt.ylabel('Volume [cm^3]')
 		#~ plt.xticks(arange(TotalAssessedAcini))	
-		plt.xlabel('Acinus')
+		#~ plt.xlabel('Acinus')
 		plt.xlim([0,None])
 		# STEPanizer
 		plt.subplot(2,len(Rat),Sample+len(Rat)+1)
@@ -554,78 +549,78 @@ for Sample in range(len(Rat)):
 		plt.axhline(np.mean(np.ma.masked_invalid(AcinarVolumeSTEPanizer[Sample])),color='c',linestyle='dotted',linewidth=2,label='STEPanizer mean +- 3xSTD') # no x-range necessary
 		plt.axhline((np.mean(np.ma.masked_invalid(AcinarVolumeSTEPanizer[Sample]))+(3*np.std(np.ma.masked_invalid(AcinarVolumeSTEPanizer[Sample])))),color='c',linestyle='dotted',alpha=0.5)
 		plt.axhline((np.mean(np.ma.masked_invalid(AcinarVolumeSTEPanizer[Sample]))-(3*np.std(np.ma.masked_invalid(AcinarVolumeSTEPanizer[Sample])))),color='c',linestyle='dotted',alpha=0.5)
-		plt.title(WhichRat+Rat[Sample] + 'STEPanizer (' + str(AssessedAcini[Sample]) +')')
+		plt.title('STEPanizer (' + str(AssessedAcini[Sample]) +')')
 		if Sample == 0:
 			plt.ylabel('Volume [cm^3]')	
 		#~ plt.xticks(arange(TotalAssessedAcini))
 		plt.xlabel('Acinus')
 		plt.xlim([0,None])
-plt.show()
-
-exit()
-
-
-
-
-# Plot MeVisLab- and STEPanizer-Volumes (both original and normalized
-plt.figure(num=None,figsize=(16,9))
-#~ # plot MeVisLabVolumes
-plt.subplot(221)
-# Using the sum of the AssessedAcini as below, we can set the correct
-# "distance" for the plots
-# for Sample in range(len(Rat)):
-	# print 'Sample',Sample,'from',int(sum(AssessedAcini[:Sample])),'to',int(sum(AssessedAcini[:Sample+1]))
-for Sample in range(len(Rat)):
-	plt.plot(range(int(sum(AssessedAcini[:Sample])),int(sum(AssessedAcini[:Sample+1]))),
-		PlotMeVisLabVolume[int(sum(AssessedAcini[:Sample])):int(sum(AssessedAcini[:Sample+1]))],
-		marker='o',
-		c=color[Sample])
-plt.ylabel('Volume [cm^3]')
-plt.xlabel('Acinus')
-plt.legend([WhichRat+Rat[1],WhichRat+Rat[3],WhichRat+Rat[4]],loc='best')
-plt.title('AcinarVolumeMeVisLab')
-plt.xticks(arange(TotalAssessedAcini))
-# plot STEPanizerVolumes
-plt.subplot(222)
-for Sample in range(len(Rat)):
-	plt.plot(range(int(sum(AssessedAcini[:Sample])),int(sum(AssessedAcini[:Sample+1]))),
-		PlotSTEPAnizerVolume[int(sum(AssessedAcini[:Sample])):int(sum(AssessedAcini[:Sample+1]))],
-		marker='o',
-		c=color[Sample])
-plt.ylabel('Volume [cm^3]')
-plt.xlabel('Acinus')
-plt.legend([WhichRat+Rat[1],WhichRat+Rat[3],WhichRat+Rat[4]],loc='best')
-plt.title('STEPanizerVolumes')
-plt.xticks(arange(TotalAssessedAcini))
-# plot NORMALIZED MeVisLabVolumes
-plt.subplot(223)
-for Sample in range(len(Rat)):
-	plt.plot(range(int(sum(AssessedAcini[:Sample])),int(sum(AssessedAcini[:Sample+1]))),
-		PlotNormalizedMeVisLabVolume[int(sum(AssessedAcini[:Sample])):int(sum(AssessedAcini[:Sample+1]))],
-		marker='o',
-		c=color[Sample])	
-plt.ylabel('Normalized Volume')
-plt.xlabel('Acinus')
-plt.legend([WhichRat+Rat[1],WhichRat+Rat[3],WhichRat+Rat[4]],loc='best')
-plt.title('NORMALIZED AcinarVolumeMeVisLab')
-plt.xticks(arange(TotalAssessedAcini))
-# plot NORMALIZED STEPanizerVolumes without NaNs
-plt.subplot(224)
-for Sample in range(len(Rat)):
-	plt.plot(range(int(sum(AssessedAcini[:Sample])),int(sum(AssessedAcini[:Sample+1]))),
-		PlotNormalizedSTEPanizerVolume[int(sum(AssessedAcini[:Sample])):int(sum(AssessedAcini[:Sample+1]))],
-		marker='o',
-		c=color[Sample])
-plt.ylabel('Normalized Volume')
-plt.xlabel('Acinus')
-plt.legend([WhichRat+Rat[1],WhichRat+Rat[3],WhichRat+Rat[4]],loc='best')
-plt.title('NORMALIZED STEPanizerVolumes')
-plt.xticks(arange(TotalAssessedAcini))
-plt.tight_layout()
 if SaveFigures:
-	plt.savefig('plot_mevislab_vs_stepanizervolumes.png',transparent=False)
+	plt.savefig('plot_mevislab_stepanizer_volumes.png')
 if TikZTheData:
-	tikz_save('plot_mevislab_vs_stepanizervolumes.tikz')
+	tikz_save('plot_mevislab_stepanizer_volumes.tikz')
+	
+# Plot volumes for single samples
+for Sample in range(len(Rat)):
+	if Beamtime[Sample]:
+		# MeVisLab
+		plt.figure(num=None,figsize=(16,9))
+		plt.plot(range(MaximumAcini),AcinarVolumeMeVisLab[Sample],color=color[Sample])
+		# Plot mean MeVisLab-Volume
+		plt.axhline(np.mean(np.ma.masked_invalid(AcinarVolumeMeVisLab[Sample])),color='c',linestyle='dashed',linewidth=2,label='MeVisLab mean & 3xSTD') # no x-range necessary
+		plt.axhline((np.mean(np.ma.masked_invalid(AcinarVolumeMeVisLab[Sample]))+(3*np.std(np.ma.masked_invalid(AcinarVolumeMeVisLab[Sample])))),color='c',linestyle='dashed',alpha=0.5)
+		plt.axhline((np.mean(np.ma.masked_invalid(AcinarVolumeMeVisLab[Sample]))-(3*np.std(np.ma.masked_invalid(AcinarVolumeMeVisLab[Sample])))),color='c',linestyle='dashed',alpha=0.5)
+		plt.title(WhichRat+Rat[Sample] + ' MeVisLab (' + str(AssessedAcini[Sample]) +')')			
+		if Sample == 0:
+			plt.ylabel('Volume [cm^3]')
+		#~ plt.xticks(arange(TotalAssessedAcini))	
+		#~ plt.xlabel('Acinus')
+		plt.xlim([0,None])
+		if SaveFigures:
+			plt.savefig('plot_mevisvolume_' + str(WhichRat+Rat[Sample]) + '.png')
+		if TikZTheData:
+			tikz_save('plot_mevisvolume_' + str(WhichRat+Rat[Sample]) + '.tikz')
+		# STEPanizer
+		plt.figure(num=None,figsize=(16,9))
+		plt.plot(range(MaximumAcini),AcinarVolumeSTEPanizer[Sample],color=color[Sample])
+		# Plot mean STEPanizer-Volume
+		plt.axhline(np.mean(np.ma.masked_invalid(AcinarVolumeSTEPanizer[Sample])),color='c',linestyle='dotted',linewidth=2,label='STEPanizer mean & 3xSTD') # no x-range necessary
+		plt.axhline((np.mean(np.ma.masked_invalid(AcinarVolumeSTEPanizer[Sample]))+(3*np.std(np.ma.masked_invalid(AcinarVolumeSTEPanizer[Sample])))),color='c',linestyle='dotted',alpha=0.5)
+		plt.axhline((np.mean(np.ma.masked_invalid(AcinarVolumeSTEPanizer[Sample]))-(3*np.std(np.ma.masked_invalid(AcinarVolumeSTEPanizer[Sample])))),color='c',linestyle='dotted',alpha=0.5)
+		plt.title('STEPanizer (' + str(AssessedAcini[Sample]) +')')
+		if Sample == 0:
+			plt.ylabel('Volume [cm^3]')	
+		#~ plt.xticks(arange(TotalAssessedAcini))
+		plt.xlabel('Acinus')
+		plt.xlim([0,None])
+		if SaveFigures:
+			plt.savefig('plot_stepanizervolume_' + str(WhichRat+Rat[Sample]) + '.png')
+		if TikZTheData:
+			tikz_save('plot_stepanizervolume_' + str(WhichRat+Rat[Sample]) + '.tikz')
+			
+plt.show()
+exit()	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # plot both MeVisLab- and STEPanizer-Volumes in one plot
 plt.figure(num=None,figsize=(16,9))
