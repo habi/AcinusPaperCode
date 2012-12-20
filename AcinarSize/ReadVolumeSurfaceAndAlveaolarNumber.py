@@ -297,6 +297,7 @@ print
 
 # Remove Outlier if > (mean +- BiggerThan*STD)
 BiggerThan = 2
+NumberOfOutliers = [ 0 for Sample in range(len(Rat))]
 print 'Removing outliers if larger or smaller than mean +-',BiggerThan,'*STD'
 for Sample in range(len(Rat)):
 	for Acinus in range(MaximumAcini):
@@ -317,6 +318,7 @@ for Sample in range(len(Rat)):
 					np.round(AcinarVolumeMeanSTEPanizer[Sample] - ( BiggerThan * AcinarVolumeSTDSTEPanizer[Sample] ),decimals=5),\
 					'thus setting to NaN'
 				AcinarVolumeSTEPanizer[Sample][Acinus] = np.nan
+				NumberOfOutliers[Sample] += 1
 			if not (
 				AcinarVolumeMeanMeVisLab[Sample] - ( BiggerThan * AcinarVolumeSTDMeVisLab[Sample] )
 				<=
@@ -333,7 +335,11 @@ for Sample in range(len(Rat)):
 					np.round(AcinarVolumeMeanMeVisLab[Sample] - ( BiggerThan * AcinarVolumeSTDMeVisLab[Sample] ),decimals=5),\
 					'thus setting to NaN'
 				AcinarVolumeMeVisLab[Sample][Acinus] = np.nan
-print '________________________________________________________________________________'
+				NumberOfOutliers[Sample] += 1
+for Sample in range(len(Rat)):
+	if NumberOfOutliers[Sample] > 0:
+		print WhichRat + Rat[Sample] + ': Removed',NumberOfOutliers[Sample],'Outlier(s) from the volume data'
+print '________________________________________________________________________________'		
 
 print 'After removing the outliers, we now have a'
 print 'Mean acinar volume MeVisLab'
@@ -454,24 +460,6 @@ for Sample in range(len(Rat)):
 		
 print 'The mean of each and every difference (STEPanizer-/MeVisLab-volume) is',np.round(np.mean(np.ma.masked_invalid(STEPanizerMeVisLabDifference)),decimals=3),'times bigger'
 
-# Output
-# Give out values to command line
-print '________________________________________________________________________________'
-print
-print 'The data below has been written to the preamble of "acinus.tex", around line 56:'
-print '\\newcommand{\\shrinkagefactor}{' + str(ShrinkageFactor) + '} % Shrinkagefactor used for the calculation' 
-print '\\newcommand{\\numberofacini}{' + str(TotalAssessedAcini) + '}'
-print '\\newcommand{\\meantotalnumberofacini}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAcini))))) + '}'
-print '\\newcommand{\\meanacinarvolume}{' + str(np.mean(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer))) + '} % cm^3, (mean acinar volume)'
-print '\\newcommand{\\std}{' + str(np.std(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer))) + '} % (Standard deviation of acinar volumes)'
-print '\\newcommand{\\meannumberofalveoli}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAlveoli))))) + '} % (Mean number of alveoli per acinus)'
-print '\\newcommand{\\difference}{' + str(+np.mean(np.ma.masked_invalid(STEPanizerMeVisLabDifference,))) + '} % X times bigger (acinar volumes STEPanizer/MeVisLab-volumes)'
-print '\\newcommand{\\acinarsurface}{' + str(np.mean(np.ma.masked_invalid(MeanAcinarSurface))) + '} % cm^2'
-print '\\newcommand{\\meanairspacesurface}{' + str(np.mean(np.ma.masked_invalid(DiffusionSurface))) + '} % cm^2'
-print '\\newcommand{\\airspacedifference}{' + str(np.round(np.mean(AbsoluteAirspaceSurface) / np.mean(np.ma.masked_invalid(DiffusionSurface)),decimals=3)) + '} % times'
-print '________________________________________________________________________________'
-print
-
 # Write the data as variables directly to acinus.tex, so we don't have to copy-paste it all the time...
 # The replacement stuff comes from http://is.gd/LIYXmb
 for line in fileinput.FileInput('p:\\doc\\#Docs\\AcinusPaper\\acinus.tex',inplace=1):
@@ -480,21 +468,51 @@ for line in fileinput.FileInput('p:\\doc\\#Docs\\AcinusPaper\\acinus.tex',inplac
 	elif '\\newcommand{\\numberofacini}{' in line:
 		print '\\newcommand{\\numberofacini}{' + str(TotalAssessedAcini) + '}'
 	elif '\\newcommand{\\meantotalnumberofacini}{' in line:
-		print '\\newcommand{\\meantotalnumberofacini}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAcini))))) + '}'
+		print '\\newcommand{\\meantotalnumberofacini}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAcini))))) + '}'	
+	elif '\\newcommand{\\meantotalnumberofacinirounded}{' in line:
+		print '\\newcommand{\\meantotalnumberofacinirounded}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAcini))/100)*100)) + '}'
+	elif '\\newcommand{\\totalnumberofaciniB}{' in line:
+		print '\\newcommand{\\totalnumberofaciniB}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAcini[1]))))) + '}'
+	elif '\\newcommand{\\totalnumberofaciniD}{' in line:
+		print '\\newcommand{\\totalnumberofaciniD}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAcini[3]))))) + '}'
+	elif '\\newcommand{\\totalnumberofaciniE}{' in line:
+		print '\\newcommand{\\totalnumberofaciniE}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAcini[4]))))) + '}'
 	elif '\\newcommand{\\meanacinarvolume}{' in line:
-		print '\\newcommand{\\meanacinarvolume}{' + str(np.mean(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer))) + '} % cm^3, (mean acinar volume)'
+		print '\\newcommand{\\meanacinarvolume}{' + str('%.3e' % np.mean(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer))) + '} % cm^3, (mean acinar volume)'
 	elif '\\newcommand{\\std}{' in line:
-		print '\\newcommand{\\std}{' + str(np.std(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer))) + '} % (Standard deviation of acinar volumes)'
+		print '\\newcommand{\\std}{' + str('%.3e' % np.std(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer))) + '} % (Standard deviation of acinar volumes)'
 	elif '\\newcommand{\\meannumberofalveoli}{' in line:
-		print '\\newcommand{\\meannumberofalveoli}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAlveoli))))) + '} % (Mean number of alveoli per acinus)'
+		print '\\newcommand{\\meannumberofalveoli}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAlveoli))))) + '} % (Mean number of alveoli per acinus)'						
+	elif '\\newcommand{\\numberofalveoliB}{' in line:
+		print '\\newcommand{\\numberofalveoliB}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAlveoli[1]))))) + '}'
+	elif '\\newcommand{\\numberofalveoliD}{' in line:
+		print '\\newcommand{\\numberofalveoliD}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAlveoli[3]))))) + '}'
+	elif '\\newcommand{\\numberofalveoliE}{' in line:
+		print '\\newcommand{\\numberofalveoliE}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAlveoli[4]))))) + '}'
 	elif '\\newcommand{\\difference}{' in line:
-		print '\\newcommand{\\difference}{' + str(+np.mean(np.ma.masked_invalid(STEPanizerMeVisLabDifference,))) + '} % X times bigger (acinar volumes STEPanizer/MeVisLab-volumes)'
-	elif '\\newcommand{\\acinarsurface}{' in line:
-		print '\\newcommand{\\acinarsurface}{' + str(np.mean(np.ma.masked_invalid(MeanAcinarSurface))) + '} % cm^2'
+		print '\\newcommand{\\difference}{' + str(np.round(np.mean(np.ma.masked_invalid(STEPanizerMeVisLabDifference)),decimals=3)) + '} % X times bigger (acinar volumes STEPanizer/MeVisLab-volumes)'
+	elif '\\newcommand{\\meanacinarsurface}{' in line:
+		print '\\newcommand{\\meanacinarsurface}{' + str(np.round(np.mean(np.ma.masked_invalid(MeanAcinarSurface)),decimals=3)) + '} % cm^2'
+	elif '\\newcommand{\\acinarsurfaceB}{' in line:
+		print '\\newcommand{\\acinarsurfaceB}{' + str(np.round(np.mean(np.ma.masked_invalid(MeanAcinarSurface[1])),decimals=3)) + '} % cm^2'
+	elif '\\newcommand{\\acinarsurfaceD}{' in line:
+		print '\\newcommand{\\acinarsurfaceD}{' + str(np.round(np.mean(np.ma.masked_invalid(MeanAcinarSurface[3])),decimals=3)) + '} % cm^2'
+	elif '\\newcommand{\\acinarsurfaceE}{' in line:
+		print '\\newcommand{\\acinarsurfaceE}{' + str(np.round(np.mean(np.ma.masked_invalid(MeanAcinarSurface[4])),decimals=3)) + '} % cm^2'						
 	elif '\\newcommand{\\meanairspacesurface}{' in line:
-		print '\\newcommand{\\meanairspacesurface}{' + str(np.mean(np.ma.masked_invalid(DiffusionSurface))) + '} % cm^2'
+		print '\\newcommand{\\meanairspacesurface}{' + str(int(np.round(np.mean(np.ma.masked_invalid(DiffusionSurface))))) + '} % cm^2'
+	elif '\\newcommand{\\airspacesurfaceB}{' in line:
+		print '\\newcommand{\\airspacesurfaceB}{' + str(int(np.round(np.mean(np.ma.masked_invalid(DiffusionSurface[1]))))) + '} % cm^2'
+	elif '\\newcommand{\\airspacesurfaceD}{' in line:
+		print '\\newcommand{\\airspacesurfaceD}{' + str(int(np.round(np.mean(np.ma.masked_invalid(DiffusionSurface[3]))))) + '} % cm^2'
+	elif '\\newcommand{\\airspacesurfaceE}{' in line:
+		print '\\newcommand{\\airspacesurfaceE}{' + str(int(np.round(np.mean(np.ma.masked_invalid(DiffusionSurface[4]))))) + '} % cm^2'				
 	elif '\\newcommand{\\airspacedifference}{' in line:
 		print '\\newcommand{\\airspacedifference}{' + str(np.round(np.mean(AbsoluteAirspaceSurface) / np.mean(np.ma.masked_invalid(DiffusionSurface)),decimals=3)) + '} % times'
+	elif '\\newcommand{\\numberofoutliers}{' in line:
+		print '\\newcommand{\\numberofoutliers}{' + str(sum(NumberOfOutliers)) + '} % Number of Outliers removed'
+	elif '\\newcommand{\\biggerthan}{' in line:
+		print '\\newcommand{\\biggerthan}{' + str(BiggerThan) + '} % Outliers bigger/smaller than mean +- BiggerThan * STD have been removed'
 	else:
 		print line, # the ',' at the end prevents a newline
 
@@ -534,8 +552,8 @@ for Sample in range(len(Rat)):
 		plt.scatter(range(MaximumAcini),AcinarVolumeMeVisLab[Sample],color=color[Sample])
 		# Plot mean MeVisLab-Volume
 		plt.axhline(np.mean(np.ma.masked_invalid(AcinarVolumeMeVisLab[Sample])),color='c',linestyle='dashed',linewidth=2,label='MeVisLab mean +- 3xSTD') # no x-range necessary
-		plt.axhline((np.mean(np.ma.masked_invalid(AcinarVolumeMeVisLab[Sample]))+(3*np.std(np.ma.masked_invalid(AcinarVolumeMeVisLab[Sample])))),color='c',linestyle='dashed',alpha=0.5)
-		plt.axhline((np.mean(np.ma.masked_invalid(AcinarVolumeMeVisLab[Sample]))-(3*np.std(np.ma.masked_invalid(AcinarVolumeMeVisLab[Sample])))),color='c',linestyle='dashed',alpha=0.5)
+		plt.axhline((np.mean(np.ma.masked_invalid(AcinarVolumeMeVisLab[Sample]))+(3*np.std(np.ma.masked_invalid(AcinarVolumeMeVisLab[Sample])))),color='c',linestyle='dotted',alpha=0.5)
+		plt.axhline((np.mean(np.ma.masked_invalid(AcinarVolumeMeVisLab[Sample]))-(3*np.std(np.ma.masked_invalid(AcinarVolumeMeVisLab[Sample])))),color='c',linestyle='dotted',alpha=0.5)
 		plt.title(WhichRat+Rat[Sample] + '\nMeVisLab (' + str(AssessedAcini[Sample]) +')')			
 		if Sample == 0:
 			plt.ylabel('Volume [cm^3]')
@@ -546,7 +564,7 @@ for Sample in range(len(Rat)):
 		plt.subplot(2,len(Rat),Sample+len(Rat)+1)
 		plt.scatter(range(MaximumAcini),AcinarVolumeSTEPanizer[Sample],color=color[Sample])
 		# Plot mean STEPanizer-Volume
-		plt.axhline(np.mean(np.ma.masked_invalid(AcinarVolumeSTEPanizer[Sample])),color='c',linestyle='dotted',linewidth=2,label='STEPanizer mean +- 3xSTD') # no x-range necessary
+		plt.axhline(np.mean(np.ma.masked_invalid(AcinarVolumeSTEPanizer[Sample])),color='c',linestyle='dashed',linewidth=2,label='STEPanizer mean +- 3xSTD') # no x-range necessary
 		plt.axhline((np.mean(np.ma.masked_invalid(AcinarVolumeSTEPanizer[Sample]))+(3*np.std(np.ma.masked_invalid(AcinarVolumeSTEPanizer[Sample])))),color='c',linestyle='dotted',alpha=0.5)
 		plt.axhline((np.mean(np.ma.masked_invalid(AcinarVolumeSTEPanizer[Sample]))-(3*np.std(np.ma.masked_invalid(AcinarVolumeSTEPanizer[Sample])))),color='c',linestyle='dotted',alpha=0.5)
 		plt.title('STEPanizer (' + str(AssessedAcini[Sample]) +')')
