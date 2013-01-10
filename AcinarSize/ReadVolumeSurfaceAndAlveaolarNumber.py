@@ -33,6 +33,7 @@ if os.path.exists(Drive) == False:
 	exit()
 
 verbose = False # set to 'False' to suppress some output.
+RemoveOutliers = True
 PlotTheData = True # True/False switches between showing and not showing the plots at the end
 SaveFigures = True # save the plot to .png-Files
 TikZTheData = True # save the data to .tikz-Files to import into LaTeX
@@ -120,6 +121,7 @@ for Sample in range(len(Rat)):
 	for CurrentFile in CSVFileVolume[Sample][:]:
 		CurrentAcinusNumber = int(CurrentFile[CurrentFile.find('acinus')+len('acinus'):CurrentFile.find('acinus')+len('acinus')+2])
 		ListOfAciniAlveoli.append(CurrentAcinusNumber)
+		
 MaximumAcini.append(max(ListOfAciniVolume) + 1)
 MaximumAcini.append(max(ListOfAciniAlveoli) + 1)
 TotalAssessedAcini.append(len(ListOfAciniVolume))
@@ -295,65 +297,66 @@ print 'Mean acinar volume (mean of *all* acini):',np.mean(np.ma.masked_invalid(A
 print 'Mean acinar volume (mean of means of each sample):', np.mean(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer)),'cm^3, Standard deviation:',np.std(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer))
 print
 
-# Remove Outlier if > (mean +- BiggerThan*STD)
-BiggerThan = 2
 NumberOfOutliers = [ 0 for Sample in range(len(Rat))]
-print 'Removing outliers if larger or smaller than mean +-',BiggerThan,'*STD'
-for Sample in range(len(Rat)):
-	for Acinus in range(MaximumAcini):
-		if not np.isnan(AcinarVolumeSTEPanizer[Sample][Acinus]):
-			if not (
-				AcinarVolumeMeanSTEPanizer[Sample] - ( BiggerThan * AcinarVolumeSTDSTEPanizer[Sample] )
-				<=
-				AcinarVolumeSTEPanizer[Sample][Acinus]
-				<=
-				AcinarVolumeMeanSTEPanizer[Sample] + ( BiggerThan * AcinarVolumeSTDSTEPanizer[Sample] )
-				):
-				print 'STEPanizer'
-				print WhichRat + Rat[Sample] + ', Acinus',Acinus,\
-					'volume:',np.round(AcinarVolumeSTEPanizer[Sample][Acinus],decimals=5),\
-					'is larger than',\
-					np.round(AcinarVolumeMeanSTEPanizer[Sample] + ( BiggerThan * AcinarVolumeSTDSTEPanizer[Sample] ),decimals=5),\
-					'or smaller than',\
-					np.round(AcinarVolumeMeanSTEPanizer[Sample] - ( BiggerThan * AcinarVolumeSTDSTEPanizer[Sample] ),decimals=5),\
-					'thus setting to NaN'
-				AcinarVolumeSTEPanizer[Sample][Acinus] = np.nan
-				NumberOfOutliers[Sample] += 1
-			if not (
-				AcinarVolumeMeanMeVisLab[Sample] - ( BiggerThan * AcinarVolumeSTDMeVisLab[Sample] )
-				<=
-				AcinarVolumeMeVisLab[Sample][Acinus]
-				<=
-				AcinarVolumeMeanMeVisLab[Sample] + ( BiggerThan * AcinarVolumeSTDMeVisLab[Sample] )
-				):
-				print 'MeVisLab'
-				print WhichRat + Rat[Sample] + ', Acinus',Acinus,\
-					'volume:',np.round(AcinarVolumeMeVisLab[Sample][Acinus],decimals=5),\
-					'is larger than',\
-					np.round(AcinarVolumeMeanMeVisLab[Sample] + ( BiggerThan * AcinarVolumeSTDMeVisLab[Sample] ),decimals=5),\
-					'or smaller than',\
-					np.round(AcinarVolumeMeanMeVisLab[Sample] - ( BiggerThan * AcinarVolumeSTDMeVisLab[Sample] ),decimals=5),\
-					'thus setting to NaN'
-				AcinarVolumeMeVisLab[Sample][Acinus] = np.nan
-				NumberOfOutliers[Sample] += 1
-for Sample in range(len(Rat)):
-	if NumberOfOutliers[Sample] > 0:
-		print WhichRat + Rat[Sample] + ': Removed',NumberOfOutliers[Sample],'Outlier(s) from the volume data'
-print '________________________________________________________________________________'		
+BiggerThan = 2
+# Remove Outlier if > (mean +- BiggerThan*STD)
+if RemoveOutliers:
+	print 'Removing outliers if larger or smaller than mean +-',BiggerThan,'*STD'
+	for Sample in range(len(Rat)):
+		for Acinus in range(MaximumAcini):
+			if not np.isnan(AcinarVolumeSTEPanizer[Sample][Acinus]):
+				if not (
+					AcinarVolumeMeanSTEPanizer[Sample] - ( BiggerThan * AcinarVolumeSTDSTEPanizer[Sample] )
+					<=
+					AcinarVolumeSTEPanizer[Sample][Acinus]
+					<=
+					AcinarVolumeMeanSTEPanizer[Sample] + ( BiggerThan * AcinarVolumeSTDSTEPanizer[Sample] )
+					):
+					print 'STEPanizer'
+					print WhichRat + Rat[Sample] + ', Acinus',Acinus,\
+						'volume:',np.round(AcinarVolumeSTEPanizer[Sample][Acinus],decimals=5),\
+						'is larger than',\
+						np.round(AcinarVolumeMeanSTEPanizer[Sample] + ( BiggerThan * AcinarVolumeSTDSTEPanizer[Sample] ),decimals=5),\
+						'or smaller than',\
+						np.round(AcinarVolumeMeanSTEPanizer[Sample] - ( BiggerThan * AcinarVolumeSTDSTEPanizer[Sample] ),decimals=5),\
+						'thus setting to NaN'
+					AcinarVolumeSTEPanizer[Sample][Acinus] = np.nan
+					NumberOfOutliers[Sample] += 1
+				if not (
+					AcinarVolumeMeanMeVisLab[Sample] - ( BiggerThan * AcinarVolumeSTDMeVisLab[Sample] )
+					<=
+					AcinarVolumeMeVisLab[Sample][Acinus]
+					<=
+					AcinarVolumeMeanMeVisLab[Sample] + ( BiggerThan * AcinarVolumeSTDMeVisLab[Sample] )
+					):
+					print 'MeVisLab'
+					print WhichRat + Rat[Sample] + ', Acinus',Acinus,\
+						'volume:',np.round(AcinarVolumeMeVisLab[Sample][Acinus],decimals=5),\
+						'is larger than',\
+						np.round(AcinarVolumeMeanMeVisLab[Sample] + ( BiggerThan * AcinarVolumeSTDMeVisLab[Sample] ),decimals=5),\
+						'or smaller than',\
+						np.round(AcinarVolumeMeanMeVisLab[Sample] - ( BiggerThan * AcinarVolumeSTDMeVisLab[Sample] ),decimals=5),\
+						'thus setting to NaN'
+					AcinarVolumeMeVisLab[Sample][Acinus] = np.nan
+					NumberOfOutliers[Sample] += 1
+	for Sample in range(len(Rat)):
+		if NumberOfOutliers[Sample] > 0:
+			print WhichRat + Rat[Sample] + ': Removed',NumberOfOutliers[Sample],'Outlier(s) from the volume data'
+	print '________________________________________________________________________________'		
 
-print 'After removing the outliers, we now have a'
-print 'Mean acinar volume MeVisLab'
-AcinarVolumeMeanMeVisLab = [np.nan for Sample in range(len(Rat))]
-for Sample in range(len(Rat)):
-	if Beamtime[Sample] == '':
-		print WhichRat + Rat[Sample] + ': not scanned'
-	else:
-		AcinarVolumeMeanMeVisLab[Sample] = np.mean(np.ma.masked_invalid(AcinarVolumeMeVisLab[Sample]))
-		print WhichRat + Rat[Sample] + ':', AcinarVolumeMeanMeVisLab[Sample], 'cm^3'
-print 'Mean acinar volume for all samples:', np.mean(np.ma.masked_invalid(AcinarVolumeMeanMeVisLab)), 'cm^3'
-print 'Standard deviation of the mean acinar volume for all samples:', np.std(np.ma.masked_invalid(AcinarVolumeMeanMeVisLab))
-print '________________________________________________________________________________'
-print
+	print 'After removing the outliers, we now have a'
+	print 'Mean acinar volume MeVisLab'
+	AcinarVolumeMeanMeVisLab = [np.nan for Sample in range(len(Rat))]
+	for Sample in range(len(Rat)):
+		if Beamtime[Sample] == '':
+			print WhichRat + Rat[Sample] + ': not scanned'
+		else:
+			AcinarVolumeMeanMeVisLab[Sample] = np.mean(np.ma.masked_invalid(AcinarVolumeMeVisLab[Sample]))
+			print WhichRat + Rat[Sample] + ':', AcinarVolumeMeanMeVisLab[Sample], 'cm^3'
+	print 'Mean acinar volume for all samples:', np.mean(np.ma.masked_invalid(AcinarVolumeMeanMeVisLab)), 'cm^3'
+	print 'Standard deviation of the mean acinar volume for all samples:', np.std(np.ma.masked_invalid(AcinarVolumeMeanMeVisLab))
+	print '________________________________________________________________________________'
+	print
 
 print 'Mean acinar volume STEPanizer'
 AcinarVolumeMeanSTEPanizer = [np.nan for Sample in range(len(Rat))]
@@ -467,6 +470,12 @@ for line in fileinput.FileInput('p:\\doc\\#Docs\\AcinusPaper\\acinus.tex',inplac
 		print '\\newcommand{\\shrinkagefactor}{' + str(ShrinkageFactor) + '} % Shrinkagefactor used for the calculation' 
 	elif '\\newcommand{\\numberofacini}{' in line:
 		print '\\newcommand{\\numberofacini}{' + str(TotalAssessedAcini) + '}'
+	elif '\\newcommand{\\numberofaciniB}{' in line:
+		print '\\newcommand{\\numberofaciniB}{' + str(AssessedAcini[1]) + '}'
+	elif '\\newcommand{\\numberofaciniD}{' in line:
+		print '\\newcommand{\\numberofaciniD}{' + str(AssessedAcini[3]) + '}'
+	elif '\\newcommand{\\numberofaciniE}{' in line:
+		print '\\newcommand{\\numberofaciniE}{' + str(AssessedAcini[4]) + '}'	
 	elif '\\newcommand{\\meantotalnumberofacini}{' in line:
 		print '\\newcommand{\\meantotalnumberofacini}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAcini))))) + '}'	
 	elif '\\newcommand{\\meantotalnumberofacinirounded}{' in line:
@@ -614,7 +623,7 @@ for Sample in range(len(Rat)):
 		if SaveFigures:
 			plt.savefig('plot_stepanizervolume_' + str(WhichRat+Rat[Sample]) + '.png')
 		if TikZTheData:
-			tikz_save('plot_stepanizervolume_' + str(WhichRat+Rat[Sample]) + '.tikz')
+			tikz_save('plot_stepanizervolume_' + str(WhichRat+Rat[Sample]) + '.tikz',encoding='utf8')
 			
 plt.show()
 exit()	
