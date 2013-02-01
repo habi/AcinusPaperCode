@@ -463,6 +463,22 @@ for Sample in range(len(Rat)):
 		
 print 'The mean of each and every difference (STEPanizer-/MeVisLab-volume) is',np.round(np.mean(np.ma.masked_invalid(STEPanizerMeVisLabDifference)),decimals=3),'times bigger'
 
+
+### Calculation for variant
+NumberOfAciniVariant = [np.nan for Sample in range(len(Rat))]
+TotalNumberOfAlveoli = [np.nan for Sample in range(len(Rat))]
+
+TotalNumberOfAlveoli[1] = 39373856. # From DatenblattStefan.xls
+TotalNumberOfAlveoli[3] = 56599446.
+TotalNumberOfAlveoli[4] = 54728409.
+
+for Sample in range(len(Rat)):
+	NumberOfAciniVariant[Sample] = TotalNumberOfAlveoli[Sample] / np.mean(np.ma.masked_invalid(NumberOfAlveoli[Sample]))
+
+print NumberOfAciniVariant
+print np.std(np.ma.masked_invalid(NumberOfAciniVariant))
+### Calculation for variant
+
 # Write the data as variables directly to acinus.tex, so we don't have to copy-paste it all the time...
 # The replacement stuff comes from http://is.gd/LIYXmb
 for line in fileinput.FileInput('p:\\doc\\#Docs\\AcinusPaper\\acinus.tex',inplace=1):
@@ -488,6 +504,16 @@ for line in fileinput.FileInput('p:\\doc\\#Docs\\AcinusPaper\\acinus.tex',inplac
 		print '\\newcommand{\\totalnumberofaciniD}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAcini[3]))))) + '}'
 	elif '\\newcommand{\\totalnumberofaciniE}{' in line:
 		print '\\newcommand{\\totalnumberofaciniE}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAcini[4]))))) + '}'
+	elif '\\newcommand{\\meantotalnumberofaciniVariant}{' in line:
+		print '\\newcommand{\\meantotalnumberofaciniVariant}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAciniVariant))))) + '}'	
+	elif '\\newcommand{\\meantotalnumberofaciniSTDVariant}{' in line:
+		print '\\newcommand{\\meantotalnumberofaciniSTDVariant}{' + str(int(np.round(np.std(np.ma.masked_invalid(NumberOfAciniVariant))))) + '} % add "ddof=1" to get the same STD as with "=STDEV()" in Excel'
+	elif '\\newcommand{\\totalnumberofaciniBVariant}{' in line:
+		print '\\newcommand{\\totalnumberofaciniBVariant}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAciniVariant[1]))))) + '}'
+	elif '\\newcommand{\\totalnumberofaciniDVariant}{' in line:
+		print '\\newcommand{\\totalnumberofaciniDVariant}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAciniVariant[3]))))) + '}'
+	elif '\\newcommand{\\totalnumberofaciniEVariant}{' in line:
+		print '\\newcommand{\\totalnumberofaciniEVariant}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAciniVariant[4]))))) + '}'	
 	elif '\\newcommand{\\acinarvolumeB}{' in line:
 		print '\\newcommand{\\acinarvolumeB}{' + str('%.3e' % np.mean(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer[1]))) + '} % cm^3'
 	elif '\\newcommand{\\acinarvolumeD}{' in line:
