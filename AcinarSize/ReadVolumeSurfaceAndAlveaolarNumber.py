@@ -34,7 +34,7 @@ if os.path.exists(Drive) == False:
 
 verbose = False # set to 'False' to suppress some output.
 RemoveOutliers = True
-PlotTheData = True # True/False switches between showing and not showing the plots at the end
+PlotTheData = False # True/False switches between showing and not showing the plots at the end
 SaveFigures = True # save the plot to .png-Files
 TikZTheData = True # save the data to .tikz-Files to import into LaTeX
 TOMCATVoxelSize = 1.48
@@ -370,7 +370,7 @@ print 'Mean acinar volume (mean of *all* acini):',np.mean(np.ma.masked_invalid(A
 print 'Mean acinar volume (mean of means of each sample):', np.mean(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer)),'cm^3, Standard deviation:',np.std(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer))
 print
 
-# Absolute parenchymal Volume / mean acinar volume = Number of Acini
+# Absolute airspace Volume / mean acinar volume = Number of Acini
 print 'Number of acini (= absolute airspace volume from stefan / mean acinar volume)'
 NumberOfAcini = [np.nan for Sample in range(len(Rat))]
 for Sample in range(len(Rat)):
@@ -416,7 +416,7 @@ print 'Mean acinar surface for all samples:',np.round(np.mean(np.ma.masked_inval
 print 'Standard deviation of the mean acinar surface for all samples:', np.std(np.ma.masked_invalid(MeanAcinarSurface))
 print
 
-# Number of Acini * Mean acinar Surface = Diffusionsurface
+# Number of Acini * Mean acinar Surface = Mean airspace surface
 print 'Diffusion surface (=number of acini * mean acinar surface)'
 DiffusionSurface = [np.nan for Sample in range(len(Rat))]
 for Sample in range(len(Rat)):
@@ -424,7 +424,7 @@ for Sample in range(len(Rat)):
 		print WhichRat + Rat[Sample] + ' was not scanned'
 	else:
 		DiffusionSurface[Sample] = NumberOfAcini[Sample] * MeanAcinarSurface[Sample]
-		print WhichRat + Rat[Sample],'contains',np.round(DiffusionSurface[Sample],3),'cm^2 of diffusion surface'
+		print WhichRat + Rat[Sample],'contains',np.round(DiffusionSurface[Sample],3),'cm^2 of mean airspace surface'
 print
 
 print 'Stefan measured the absolute airspace surface with EM and got'
@@ -478,6 +478,8 @@ for line in fileinput.FileInput('p:\\doc\\#Docs\\AcinusPaper\\acinus.tex',inplac
 		print '\\newcommand{\\numberofaciniE}{' + str(AssessedAcini[4]) + '}'	
 	elif '\\newcommand{\\meantotalnumberofacini}{' in line:
 		print '\\newcommand{\\meantotalnumberofacini}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAcini))))) + '}'	
+	elif '\\newcommand{\\meantotalnumberofaciniSTD}{' in line:
+		print '\\newcommand{\\meantotalnumberofaciniSTD}{' + str(int(np.round(np.std(np.ma.masked_invalid(NumberOfAcini))))) + '} % add "ddof=1" to get the same STD as with "=STDEV()" in Excel'
 	elif '\\newcommand{\\meantotalnumberofacinirounded}{' in line:
 		print '\\newcommand{\\meantotalnumberofacinirounded}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAcini))/100)*100)) + '}'
 	elif '\\newcommand{\\totalnumberofaciniB}{' in line:
@@ -486,10 +488,16 @@ for line in fileinput.FileInput('p:\\doc\\#Docs\\AcinusPaper\\acinus.tex',inplac
 		print '\\newcommand{\\totalnumberofaciniD}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAcini[3]))))) + '}'
 	elif '\\newcommand{\\totalnumberofaciniE}{' in line:
 		print '\\newcommand{\\totalnumberofaciniE}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAcini[4]))))) + '}'
+	elif '\\newcommand{\\acinarvolumeB}{' in line:
+		print '\\newcommand{\\acinarvolumeB}{' + str('%.3e' % np.mean(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer[1]))) + '} % cm^3'
+	elif '\\newcommand{\\acinarvolumeD}{' in line:
+		print '\\newcommand{\\acinarvolumeD}{' + str('%.3e' % np.mean(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer[3]))) + '} % cm^3'
+	elif '\\newcommand{\\acinarvolumeE}{' in line:
+		print '\\newcommand{\\acinarvolumeE}{' + str('%.3e' % np.mean(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer[4]))) + '} % cm^3'
 	elif '\\newcommand{\\meanacinarvolume}{' in line:
-		print '\\newcommand{\\meanacinarvolume}{' + str('%.3e' % np.mean(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer))) + '} % cm^3, (mean acinar volume)'
+		print '\\newcommand{\\meanacinarvolume}{' + str('%.3e' % np.mean(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer))) + '} % cm^3, (mean acinar volume)'	
 	elif '\\newcommand{\\std}{' in line:
-		print '\\newcommand{\\std}{' + str('%.3e' % np.std(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer))) + '} % (Standard deviation of acinar volumes)'
+		print '\\newcommand{\\std}{' + str('%.3e' % np.std(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer))) + '} % (Standard deviation of acinar volumes), add "ddof=1" to get the same STD as with "=STDEV()" in Excel'
 	elif '\\newcommand{\\meannumberofalveoli}{' in line:
 		print '\\newcommand{\\meannumberofalveoli}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAlveoli))))) + '} % (Mean number of alveoli per acinus)'						
 	elif '\\newcommand{\\numberofalveoliB}{' in line:
@@ -524,7 +532,6 @@ for line in fileinput.FileInput('p:\\doc\\#Docs\\AcinusPaper\\acinus.tex',inplac
 		print '\\newcommand{\\biggerthan}{' + str(BiggerThan) + '} % Outliers bigger/smaller than mean +- BiggerThan * STD have been removed'
 	else:
 		print line, # the ',' at the end prevents a newline
-
 
 if ShrinkageFactor != 1:
 	print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
@@ -626,9 +633,7 @@ for Sample in range(len(Rat)):
 			tikz_save('plot_stepanizervolume_' + str(WhichRat+Rat[Sample]) + '.tikz',encoding='utf8')
 			
 plt.show()
-exit()	
-
-
+exit()
 
 
 
