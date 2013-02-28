@@ -34,7 +34,7 @@ if os.path.exists(Drive) == False:
 
 verbose = False # set to 'False' to suppress some output.
 RemoveOutliers = True
-PlotTheData = False # True/False switches between showing and not showing the plots at the end
+PlotTheData = True # True/False switches between showing and not showing the plots at the end
 SaveFigures = True # save the plot to .png-Files
 TikZTheData = True # save the data to .tikz-Files to import into LaTeX
 TOMCATVoxelSize = 1.48
@@ -497,7 +497,7 @@ for line in fileinput.FileInput('p:\\doc\\#Docs\\AcinusPaper\\acinus.tex',inplac
 	elif '\\newcommand{\\meantotalnumberofaciniSTD}{' in line:
 		print '\\newcommand{\\meantotalnumberofaciniSTD}{' + str(int(np.round(np.std(np.ma.masked_invalid(NumberOfAcini))))) + '} % add "ddof=1" to get the same STD as with "=STDEV()" in Excel'
 	elif '\\newcommand{\\meantotalnumberofacinirounded}{' in line:
-		print '\\newcommand{\\meantotalnumberofacinirounded}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAcini))/100)*100)) + '}'
+		print '\\newcommand{\\meantotalnumberofacinirounded}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAcini))/100)*100)) + '}'	
 	elif '\\newcommand{\\totalnumberofaciniB}{' in line:
 		print '\\newcommand{\\totalnumberofaciniB}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAcini[1]))))) + '}'
 	elif '\\newcommand{\\totalnumberofaciniD}{' in line:
@@ -515,15 +515,15 @@ for line in fileinput.FileInput('p:\\doc\\#Docs\\AcinusPaper\\acinus.tex',inplac
 	elif '\\newcommand{\\totalnumberofaciniEVariant}{' in line:
 		print '\\newcommand{\\totalnumberofaciniEVariant}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAciniVariant[4]))))) + '}'	
 	elif '\\newcommand{\\acinarvolumeB}{' in line:
-		print '\\newcommand{\\acinarvolumeB}{' + str('%.3e' % np.mean(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer[1]))) + '} % cm^3'
+		print '\\newcommand{\\acinarvolumeB}{' + str('%.3f' % (np.mean(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer[1])) * 1000 )) + '} % mm^3 (changed from cm^3 to mm^3 in ReadVolumeSurfaceAndAlveaolarNumber.py) http://is.gd/Z3fUjF'
 	elif '\\newcommand{\\acinarvolumeD}{' in line:
-		print '\\newcommand{\\acinarvolumeD}{' + str('%.3e' % np.mean(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer[3]))) + '} % cm^3'
+		print '\\newcommand{\\acinarvolumeD}{' + str('%.3f' % (np.mean(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer[3])) * 1000 )) + '} % mm^3'
 	elif '\\newcommand{\\acinarvolumeE}{' in line:
-		print '\\newcommand{\\acinarvolumeE}{' + str('%.3e' % np.mean(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer[4]))) + '} % cm^3'
+		print '\\newcommand{\\acinarvolumeE}{' + str('%.3f' % (np.mean(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer[4])) * 1000 )) + '} % mm^3'
 	elif '\\newcommand{\\meanacinarvolume}{' in line:
-		print '\\newcommand{\\meanacinarvolume}{' + str('%.3e' % np.mean(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer))) + '} % cm^3, (mean acinar volume)'	
+		print '\\newcommand{\\meanacinarvolume}{' + str('%.3f' % (np.mean(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer)) * 1000 )) + '} % mm^3, (mean acinar volume)'	
 	elif '\\newcommand{\\std}{' in line:
-		print '\\newcommand{\\std}{' + str('%.3e' % np.std(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer))) + '} % (Standard deviation of acinar volumes), add "ddof=1" to get the same STD as with "=STDEV()" in Excel'
+		print '\\newcommand{\\std}{' + str('%.3f' % (np.std(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer) * 1000)) + '} % (Standard deviation of acinar volumes), add "ddof=1" to get the same STD as with "=STDEV()" in Excel'
 	elif '\\newcommand{\\meannumberofalveoli}{' in line:
 		print '\\newcommand{\\meannumberofalveoli}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAlveoli))))) + '} % (Mean number of alveoli per acinus)'						
 	elif '\\newcommand{\\numberofalveoliB}{' in line:
@@ -535,13 +535,13 @@ for line in fileinput.FileInput('p:\\doc\\#Docs\\AcinusPaper\\acinus.tex',inplac
 	elif '\\newcommand{\\difference}{' in line:
 		print '\\newcommand{\\difference}{' + str(np.round(np.mean(np.ma.masked_invalid(STEPanizerMeVisLabDifference)),decimals=3)) + '} % X times bigger (acinar volumes STEPanizer/MeVisLab-volumes)'
 	elif '\\newcommand{\\meanacinarsurface}{' in line:
-		print '\\newcommand{\\meanacinarsurface}{' + str(np.round(np.mean(np.ma.masked_invalid(MeanAcinarSurface)),decimals=3)) + '} % cm^2'
+		print '\\newcommand{\\meanacinarsurface}{' + str(np.round(np.mean(np.ma.masked_invalid(MeanAcinarSurface)),decimals=3) * 100) + '} % mm^2 (changed from cm^2 to mm^2 in ReadVolumeSurfaceAndAlveaolarNumber.py) http://is.gd/99Sa9v'
 	elif '\\newcommand{\\acinarsurfaceB}{' in line:
-		print '\\newcommand{\\acinarsurfaceB}{' + str(np.round(np.mean(np.ma.masked_invalid(MeanAcinarSurface[1])),decimals=3)) + '} % cm^2'
+		print '\\newcommand{\\acinarsurfaceB}{' + str(np.round(np.mean(np.ma.masked_invalid(MeanAcinarSurface[1])),decimals=3) * 100) + '} % mm^2'
 	elif '\\newcommand{\\acinarsurfaceD}{' in line:
-		print '\\newcommand{\\acinarsurfaceD}{' + str(np.round(np.mean(np.ma.masked_invalid(MeanAcinarSurface[3])),decimals=3)) + '} % cm^2'
+		print '\\newcommand{\\acinarsurfaceD}{' + str(np.round(np.mean(np.ma.masked_invalid(MeanAcinarSurface[3])),decimals=3) * 100) + '} % mm^2'
 	elif '\\newcommand{\\acinarsurfaceE}{' in line:
-		print '\\newcommand{\\acinarsurfaceE}{' + str(np.round(np.mean(np.ma.masked_invalid(MeanAcinarSurface[4])),decimals=3)) + '} % cm^2'						
+		print '\\newcommand{\\acinarsurfaceE}{' + str(np.round(np.mean(np.ma.masked_invalid(MeanAcinarSurface[4])),decimals=3) * 100) + '} % mm^2'
 	elif '\\newcommand{\\meanairspacesurface}{' in line:
 		print '\\newcommand{\\meanairspacesurface}{' + str(int(np.round(np.mean(np.ma.masked_invalid(DiffusionSurface))))) + '} % cm^2'
 	elif '\\newcommand{\\airspacesurfaceB}{' in line:
@@ -619,7 +619,8 @@ if SaveFigures:
 	plt.savefig('plot_mevislab_stepanizer_volumes.png')
 if TikZTheData:
 	tikz_save('plot_mevislab_stepanizer_volumes.tikz')
-	
+
+sys.exit()
 # Plot volumes for single samples
 for Sample in range(len(Rat)):
 	if Beamtime[Sample]:
@@ -632,7 +633,7 @@ for Sample in range(len(Rat)):
 		plt.axhline((np.mean(np.ma.masked_invalid(AcinarVolumeMeVisLab[Sample]))-(3*np.std(np.ma.masked_invalid(AcinarVolumeMeVisLab[Sample])))),color='c',linestyle='dashed',alpha=0.5)
 		plt.title(WhichRat+Rat[Sample] + ' MeVisLab (' + str(AssessedAcini[Sample]) +')')			
 		if Sample == 0:
-			plt.ylabel('Volume [cm^3]')
+			plt.ylabel('Volume [mm^3]')
 		#~ plt.xticks(arange(TotalAssessedAcini))	
 		#~ plt.xlabel('Acinus')
 		plt.xlim([0,None])
@@ -649,7 +650,7 @@ for Sample in range(len(Rat)):
 		plt.axhline((np.mean(np.ma.masked_invalid(AcinarVolumeSTEPanizer[Sample]))-(3*np.std(np.ma.masked_invalid(AcinarVolumeSTEPanizer[Sample])))),color='c',linestyle='dotted',alpha=0.5)
 		plt.title('STEPanizer (' + str(AssessedAcini[Sample]) +')')
 		if Sample == 0:
-			plt.ylabel('Volume [cm^3]')	
+			plt.ylabel('Volume [mm^3]')	
 		#~ plt.xticks(arange(TotalAssessedAcini))
 		plt.xlabel('Acinus')
 		plt.xlim([0,None])
@@ -659,26 +660,6 @@ for Sample in range(len(Rat)):
 			tikz_save('plot_stepanizervolume_' + str(WhichRat+Rat[Sample]) + '.tikz',encoding='utf8')
 			
 plt.show()
-exit()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 # plot both MeVisLab- and STEPanizer-Volumes in one plot
 plt.figure(num=None,figsize=(16,9))
