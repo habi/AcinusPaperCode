@@ -387,7 +387,7 @@ for Sample in range(len(Rat)):
 	if Beamtime[Sample] == '':
 		print WhichRat + Rat[Sample] + ' was not scanned'
 	else:
-		NumberOfAcini[Sample] = AbsoluteAirspaceVolume[Sample] / AcinarVolumeMeanSTEPanizer[Sample]
+		NumberOfAcini[Sample] = AbsoluteParenchymalVolume[Sample] / AcinarVolumeMeanSTEPanizer[Sample]
 		print WhichRat + Rat[Sample],'contains',int(np.round(NumberOfAcini[Sample])),'acini'
 print 'Rodriguez1987 (page 146) states a total of',NumberOfAciniRodriguez,' acini for the whole rat lungs.'
 print 'We have a mean of',int(np.round(np.mean(np.ma.masked_invalid(NumberOfAcini)))),'acini for the whole rat lungs.'
@@ -491,116 +491,115 @@ print np.std(np.ma.masked_invalid(NumberOfAciniVariant))
 
 # Write the data as variables directly to acinus.tex, so we don't have to copy-paste it all the time...
 # The replacement stuff comes from http://is.gd/LIYXmb
-# for line in fileinput.FileInput('p:\\doc\\#Docs\\AcinusPaper\\acinus.tex',inplace=1):
-for line in fileinput.FileInput('c:\\Users\\haberthu\\Desktop\\Dropbox\\Work\\AcinusPaper\\acinus.tex',inplace=1):
+for line in fileinput.FileInput('p:\\doc\\#Docs\\AcinusPaper\\acinus.tex',inplace=1):
 	if '\\newcommand{\\shrinkagefactor}{' in line:
-		print '\\newcommand{\\shrinkagefactor}{' + str(ShrinkageFactor) + '} % Shrinkagefactor used for the calculation' 
+		print '\\newcommand{\\shrinkagefactor}{' + str(ShrinkageFactor) + '\\xspace} % Shrinkagefactor used for the calculation' 
 	elif '\\newcommand{\\numberofacini}{' in line:
-		print '\\newcommand{\\numberofacini}{' + str(TotalAssessedAcini) + '}'
+		print '\\newcommand{\\numberofacini}{' + str(TotalAssessedAcini) + '\\xspace}'
 	elif '\\newcommand{\\numberofaciniB}{' in line:
-		print '\\newcommand{\\numberofaciniB}{' + str(AssessedAcini[1]) + '}'
+		print '\\newcommand{\\numberofaciniB}{' + str(AssessedAcini[1]) + '\\xspace}'
 	elif '\\newcommand{\\numberofaciniD}{' in line:
-		print '\\newcommand{\\numberofaciniD}{' + str(AssessedAcini[3]) + '}'
+		print '\\newcommand{\\numberofaciniD}{' + str(AssessedAcini[3]) + '\\xspace}'
 	elif '\\newcommand{\\numberofaciniE}{' in line:
-		print '\\newcommand{\\numberofaciniE}{' + str(AssessedAcini[4]) + '}'	
+		print '\\newcommand{\\numberofaciniE}{' + str(AssessedAcini[4]) + '\\xspace}'
 	elif '\\newcommand{\\meantotalnumberofacini}{' in line:
-		print '\\newcommand{\\meantotalnumberofacini}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAcini))))) + '}'	
+		print '\\newcommand{\\meantotalnumberofacini}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAcini))))) + '\\xspace}'
 	elif '\\newcommand{\\meantotalnumberofaciniSTD}{' in line:
-		print '\\newcommand{\\meantotalnumberofaciniSTD}{' + str(int(np.round(np.std(np.ma.masked_invalid(NumberOfAcini))))) + '} % add "ddof=1" to get the same STD as with "=STDEV()" in Excel'
+		print '\\newcommand{\\meantotalnumberofaciniSTD}{' + str(int(np.round(np.std(np.ma.masked_invalid(NumberOfAcini))))) + '\\xspace} % add "ddof=1" to get the same STD as with "=STDEV()" in Excel'
 	elif '\\newcommand{\\meantotalnumberofacinirounded}{' in line:
-		print '\\newcommand{\\meantotalnumberofacinirounded}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAcini))/100)*100)) + '}'	
+		print '\\newcommand{\\meantotalnumberofacinirounded}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAcini))/100)*100)) + '\\xspace}'
 	elif '\\newcommand{\\totalnumberofaciniB}{' in line:
-		print '\\newcommand{\\totalnumberofaciniB}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAcini[1]))))) + '}'
+		print '\\newcommand{\\totalnumberofaciniB}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAcini[1]))))) + '\\xspace}'
 	elif '\\newcommand{\\totalnumberofaciniD}{' in line:
-		print '\\newcommand{\\totalnumberofaciniD}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAcini[3]))))) + '}'
+		print '\\newcommand{\\totalnumberofaciniD}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAcini[3]))))) + '\\xspace}'
 	elif '\\newcommand{\\totalnumberofaciniE}{' in line:
-		print '\\newcommand{\\totalnumberofaciniE}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAcini[4]))))) + '}'
+		print '\\newcommand{\\totalnumberofaciniE}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAcini[4]))))) + '\\xspace}'
 	elif '\\newcommand{\\meantotalnumberofaciniVariant}{' in line:
-		print '\\newcommand{\\meantotalnumberofaciniVariant}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAciniVariant))))) + '}'	
+		print '\\newcommand{\\meantotalnumberofaciniVariant}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAciniVariant))))) + '\\xspace}'
 	elif '\\newcommand{\\meantotalnumberofaciniSTDVariant}{' in line:
-		print '\\newcommand{\\meantotalnumberofaciniSTDVariant}{' + str(int(np.round(np.std(np.ma.masked_invalid(NumberOfAciniVariant))))) + '} % add "ddof=1" to get the same STD as with "=STDEV()" in Excel'
+		print '\\newcommand{\\meantotalnumberofaciniSTDVariant}{' + str(int(np.round(np.std(np.ma.masked_invalid(NumberOfAciniVariant))))) + '\\xspace} % add "ddof=1" to get the same STD as with "=STDEV()" in Excel'
 	elif '\\newcommand{\\totalnumberofaciniBVariant}{' in line:
-		print '\\newcommand{\\totalnumberofaciniBVariant}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAciniVariant[1]))))) + '}'
+		print '\\newcommand{\\totalnumberofaciniBVariant}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAciniVariant[1]))))) + '\\xspace}'
 	elif '\\newcommand{\\totalnumberofaciniDVariant}{' in line:
-		print '\\newcommand{\\totalnumberofaciniDVariant}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAciniVariant[3]))))) + '}'
+		print '\\newcommand{\\totalnumberofaciniDVariant}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAciniVariant[3]))))) + '\\xspace}'
 	elif '\\newcommand{\\totalnumberofaciniEVariant}{' in line:
-		print '\\newcommand{\\totalnumberofaciniEVariant}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAciniVariant[4]))))) + '}'	
+		print '\\newcommand{\\totalnumberofaciniEVariant}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAciniVariant[4]))))) + '\\xspace}'
 	elif '\\newcommand{\\acinarvolumeB}{' in line:
-		print '\\newcommand{\\acinarvolumeB}{' + str('%.3f' % (np.mean(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer[1])) * 1000 )) + '} % mm^3 (changed from cm^3 to mm^3 in ReadVolumeSurfaceAndAlveaolarNumber.py) http://is.gd/Z3fUjF'
+		print '\\newcommand{\\acinarvolumeB}{' + str('%.3f' % (np.mean(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer[1])) * 1000 )) + '\\xspace} % mm^3 (changed from cm^3 to mm^3 in ReadVolumeSurfaceAndAlveaolarNumber.py) http://is.gd/Z3fUjF'
 	elif '\\newcommand{\\acinarvolumeD}{' in line:
-		print '\\newcommand{\\acinarvolumeD}{' + str('%.3f' % (np.mean(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer[3])) * 1000 )) + '} % mm^3'
+		print '\\newcommand{\\acinarvolumeD}{' + str('%.3f' % (np.mean(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer[3])) * 1000 )) + '\\xspace} % mm^3'
 	elif '\\newcommand{\\acinarvolumeE}{' in line:
-		print '\\newcommand{\\acinarvolumeE}{' + str('%.3f' % (np.mean(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer[4])) * 1000 )) + '} % mm^3'
+		print '\\newcommand{\\acinarvolumeE}{' + str('%.3f' % (np.mean(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer[4])) * 1000 )) + '\\xspace} % mm^3'
 	elif '\\newcommand{\\meanacinarvolume}{' in line:
-		print '\\newcommand{\\meanacinarvolume}{' + str('%.3f' % (np.mean(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer)) * 1000 )) + '} % mm^3, (mean acinar volume)'
+		print '\\newcommand{\\meanacinarvolume}{' + str('%.3f' % (np.mean(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer)) * 1000 )) + '\\xspace} % mm^3, (mean acinar volume)'
 	elif '\\newcommand{\\meanacinarvolumeSTD}{' in line:
-		print '\\newcommand{\\meanacinarvolumeSTD}{' + str('%.3f' % (np.std(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer)) * 1000 )) + '} % (Standard deviation of acinar volumes), add "ddof=1" to get the same STD as with "=STDEV()" in Excel'
+		print '\\newcommand{\\meanacinarvolumeSTD}{' + str('%.3f' % (np.std(np.ma.masked_invalid(AcinarVolumeMeanSTEPanizer)) * 1000 )) + '\\xspace} % (Standard deviation of acinar volumes), add "ddof=1" to get the same STD as with "=STDEV()" in Excel'
 	elif '\\newcommand{\\meannumberofalveoli}{' in line:
-		print '\\newcommand{\\meannumberofalveoli}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAlveoli))))) + '} % (Mean number of alveoli per acinus)'
+		print '\\newcommand{\\meannumberofalveoli}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAlveoli))))) + '\\xspace} % (Mean number of alveoli per acinus)'
 	elif '\\newcommand{\\meannumberofalveoliSTD}{' in line:
-		print '\\newcommand{\\meannumberofalveoliSTD}{' + str(int(np.round(np.std(np.ma.masked_invalid(NumberOfAlveoli))))) + '}'
+		print '\\newcommand{\\meannumberofalveoliSTD}{' + str(int(np.round(np.std(np.ma.masked_invalid(NumberOfAlveoli))))) + '\\xspace}'
 	elif '\\newcommand{\\numberofalveoliB}{' in line:
-		print '\\newcommand{\\numberofalveoliB}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAlveoli[1]))))) + '}'
+		print '\\newcommand{\\numberofalveoliB}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAlveoli[1]))))) + '\\xspace}'
 	elif '\\newcommand{\\numberofalveoliD}{' in line:
-		print '\\newcommand{\\numberofalveoliD}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAlveoli[3]))))) + '}'
+		print '\\newcommand{\\numberofalveoliD}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAlveoli[3]))))) + '\\xspace}'
 	elif '\\newcommand{\\numberofalveoliE}{' in line:
-		print '\\newcommand{\\numberofalveoliE}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAlveoli[4]))))) + '}'
+		print '\\newcommand{\\numberofalveoliE}{' + str(int(np.round(np.mean(np.ma.masked_invalid(NumberOfAlveoli[4]))))) + '\\xspace}'
 	elif '\\newcommand{\\difference}{' in line:
-		print '\\newcommand{\\difference}{' + str(np.round(np.mean(np.ma.masked_invalid(STEPanizerMeVisLabDifference)),decimals=3)) + '} % X times bigger (acinar volumes STEPanizer/MeVisLab-volumes)'
+		print '\\newcommand{\\difference}{' + str(np.round(np.mean(np.ma.masked_invalid(STEPanizerMeVisLabDifference)),decimals=3)) + '\\xspace} % X times bigger (acinar volumes STEPanizer/MeVisLab-volumes)'
 	elif '\\newcommand{\\meanacinarsurface}{' in line:
-		print '\\newcommand{\\meanacinarsurface}{' + str(np.round(np.mean(np.ma.masked_invalid(MeanAcinarSurface)),decimals=3) * 100) + '} % mm^2 (changed from cm^2 to mm^2 in ReadVolumeSurfaceAndAlveaolarNumber.py) http://is.gd/99Sa9v'
+		print '\\newcommand{\\meanacinarsurface}{' + str(np.round(np.mean(np.ma.masked_invalid(MeanAcinarSurface)),decimals=3) * 100) + '\\xspace} % mm^2 (changed from cm^2 to mm^2 in ReadVolumeSurfaceAndAlveaolarNumber.py) http://is.gd/99Sa9v'
 	elif '\\newcommand{\\meanacinarsurfaceSTD}{' in line:
-		print '\\newcommand{\\meanacinarsurfaceSTD}{' + str(np.round(np.std(np.ma.masked_invalid(MeanAcinarSurface)),decimals=3) * 100) + '}'
+		print '\\newcommand{\\meanacinarsurfaceSTD}{' + str(np.round(np.std(np.ma.masked_invalid(MeanAcinarSurface)),decimals=3) * 100) + '\\xspace}'
 	elif '\\newcommand{\\acinarsurfaceB}{' in line:
-		print '\\newcommand{\\acinarsurfaceB}{' + str(np.round(np.mean(np.ma.masked_invalid(MeanAcinarSurface[1])),decimals=3) * 100) + '} % mm^2'
+		print '\\newcommand{\\acinarsurfaceB}{' + str(np.round(np.mean(np.ma.masked_invalid(MeanAcinarSurface[1])),decimals=3) * 100) + '\\xspace} % mm^2'
 	elif '\\newcommand{\\acinarsurfaceD}{' in line:
-		print '\\newcommand{\\acinarsurfaceD}{' + str(np.round(np.mean(np.ma.masked_invalid(MeanAcinarSurface[3])),decimals=3) * 100) + '} % mm^2'
+		print '\\newcommand{\\acinarsurfaceD}{' + str(np.round(np.mean(np.ma.masked_invalid(MeanAcinarSurface[3])),decimals=3) * 100) + '\\xspace} % mm^2'
 	elif '\\newcommand{\\acinarsurfaceE}{' in line:
-		print '\\newcommand{\\acinarsurfaceE}{' + str(np.round(np.mean(np.ma.masked_invalid(MeanAcinarSurface[4])),decimals=3) * 100) + '} % mm^2'
+		print '\\newcommand{\\acinarsurfaceE}{' + str(np.round(np.mean(np.ma.masked_invalid(MeanAcinarSurface[4])),decimals=3) * 100) + '\\xspace} % mm^2'
 	elif '\\newcommand{\\meanairspacesurface}{' in line:
-		print '\\newcommand{\\meanairspacesurface}{' + str(int(np.round(np.mean(np.ma.masked_invalid(DiffusionSurface))))) + '} % cm^2'
+		print '\\newcommand{\\meanairspacesurface}{' + str(int(np.round(np.mean(np.ma.masked_invalid(DiffusionSurface))))) + '\\xspace} % cm^2'
 	elif '\\newcommand{\\airspacesurfaceB}{' in line:
-		print '\\newcommand{\\airspacesurfaceB}{' + str(int(np.round(np.mean(np.ma.masked_invalid(DiffusionSurface[1]))))) + '} % cm^2'
+		print '\\newcommand{\\airspacesurfaceB}{' + str(int(np.round(np.mean(np.ma.masked_invalid(DiffusionSurface[1]))))) + '\\xspace} % cm^2'
 	elif '\\newcommand{\\airspacesurfaceD}{' in line:
-		print '\\newcommand{\\airspacesurfaceD}{' + str(int(np.round(np.mean(np.ma.masked_invalid(DiffusionSurface[3]))))) + '} % cm^2'
+		print '\\newcommand{\\airspacesurfaceD}{' + str(int(np.round(np.mean(np.ma.masked_invalid(DiffusionSurface[3]))))) + '\\xspace} % cm^2'
 	elif '\\newcommand{\\airspacesurfaceE}{' in line:
-		print '\\newcommand{\\airspacesurfaceE}{' + str(int(np.round(np.mean(np.ma.masked_invalid(DiffusionSurface[4]))))) + '} % cm^2'				
+		print '\\newcommand{\\airspacesurfaceE}{' + str(int(np.round(np.mean(np.ma.masked_invalid(DiffusionSurface[4]))))) + '\\xspace} % cm^2'
 	elif '\\newcommand{\\airspacedifference}{' in line:
-		print '\\newcommand{\\airspacedifference}{' + str(np.round(np.mean(AbsoluteAirspaceSurface) / np.mean(np.ma.masked_invalid(DiffusionSurface)),decimals=3)) + '} % times'
+		print '\\newcommand{\\airspacedifference}{' + str(np.round(np.mean(AbsoluteAirspaceSurface) / np.mean(np.ma.masked_invalid(DiffusionSurface)),decimals=3)) + '\\xspace} % times'
 	elif '\\newcommand{\\numberofoutliers}{' in line:
-		print '\\newcommand{\\numberofoutliers}{' + str(sum(NumberOfOutliers)) + '} % Number of Outliers removed'
+		print '\\newcommand{\\numberofoutliers}{' + str(sum(NumberOfOutliers)) + '\\xspace} % Number of Outliers removed'
 	elif '\\newcommand{\\biggerthan}{' in line:
-		print '\\newcommand{\\biggerthan}{' + str(BiggerThan) + '} % Outliers bigger/smaller than mean +- BiggerThan * STD have been removed'
+		print '\\newcommand{\\biggerthan}{' + str(BiggerThan) + '\\xspace} % Outliers bigger/smaller than mean +- BiggerThan * STD have been removed'
 	elif '\\newcommand{\\bodyweightB}{' in line:
-		print '\\newcommand{\\bodyweightB}{' + str(int(round(np.mean(np.ma.masked_invalid(BodyWeight[1]))))) + '} % g'
+		print '\\newcommand{\\bodyweightB}{' + str(int(round(np.mean(np.ma.masked_invalid(BodyWeight[1]))))) + '\\xspace} % g'
 	elif '\\newcommand{\\bodyweightD}{' in line:
-		print '\\newcommand{\\bodyweightD}{' + str(int(round(np.mean(np.ma.masked_invalid(BodyWeight[3]))))) + '} % g'
+		print '\\newcommand{\\bodyweightD}{' + str(int(round(np.mean(np.ma.masked_invalid(BodyWeight[3]))))) + '\\xspace} % g'
 	elif '\\newcommand{\\bodyweightE}{' in line:
-		print '\\newcommand{\\bodyweightE}{' + str(int(round(np.mean(np.ma.masked_invalid(BodyWeight[4]))))) + '} % g'
+		print '\\newcommand{\\bodyweightE}{' + str(int(round(np.mean(np.ma.masked_invalid(BodyWeight[4]))))) + '\\xspace} % g'
 	elif '\\newcommand{\\meanbodyweight}{' in line:
-		print '\\newcommand{\\meanbodyweight}{' + str(int(round(np.mean(np.ma.masked_invalid(BodyWeight))))) + '} % g'
+		print '\\newcommand{\\meanbodyweight}{' + str(int(round(np.mean(np.ma.masked_invalid(BodyWeight))))) + '\\xspace} % g'
 	elif '\\newcommand{\\meanbodyweightSTD}{' in line:
-		print '\\newcommand{\\meanbodyweightSTD}{' + str('%.3f' % (np.std(np.ma.masked_invalid(BodyWeight)))) + '}'
+		print '\\newcommand{\\meanbodyweightSTD}{' + str('%.3f' % (np.std(np.ma.masked_invalid(BodyWeight)))) + '\\xspace}'
 	elif '\\newcommand{\\totallungvolumeB}{' in line:
-		print '\\newcommand{\\totallungvolumeB}{' + str(int(np.mean(np.ma.masked_invalid(TotalLungVolume[1]) * 1000 ))) + '} % mm^3'
+		print '\\newcommand{\\totallungvolumeB}{' + str(int(np.mean(np.ma.masked_invalid(TotalLungVolume[1]) * 1000 ))) + '\\xspace} % mm^3'
 	elif '\\newcommand{\\totallungvolumeD}{' in line:
-		print '\\newcommand{\\totallungvolumeD}{' + str(int(np.mean(np.ma.masked_invalid(TotalLungVolume[3]) * 1000 ))) + '} % mm^3'
+		print '\\newcommand{\\totallungvolumeD}{' + str(int(np.mean(np.ma.masked_invalid(TotalLungVolume[3]) * 1000 ))) + '\\xspace} % mm^3'
 	elif '\\newcommand{\\totallungvolumeE}{' in line:
-		print '\\newcommand{\\totallungvolumeE}{' + str(int(np.mean(np.ma.masked_invalid(TotalLungVolume[4]) * 1000 ))) + '} % mm^3'
+		print '\\newcommand{\\totallungvolumeE}{' + str(int(np.mean(np.ma.masked_invalid(TotalLungVolume[4]) * 1000 ))) + '\\xspace} % mm^3'
 	elif '\\newcommand{\\meantotallungvolume}{' in line:
-		print '\\newcommand{\\meantotallungvolume}{' + str(int(round(np.mean(np.ma.masked_invalid(TotalLungVolume) * 1000 )))) + '} % mm^3'
+		print '\\newcommand{\\meantotallungvolume}{' + str(int(round(np.mean(np.ma.masked_invalid(TotalLungVolume) * 1000 )))) + '\\xspace} % mm^3'
 	elif '\\newcommand{\\meantotallungvolumeSTD}{' in line:
-		print '\\newcommand{\\meantotallungvolumeSTD}{' + str('%.3f' % (np.std(np.ma.masked_invalid(TotalLungVolume) * 1000 ))) + '}'
+		print '\\newcommand{\\meantotallungvolumeSTD}{' + str('%.3f' % (np.std(np.ma.masked_invalid(TotalLungVolume) * 1000 ))) + '\\xspace}'
 	elif '\\newcommand{\\parenchymalvolumeB}{' in line:
-		print '\\newcommand{\\parenchymalvolumeB}{' + str(int(round(np.mean(np.ma.masked_invalid(AbsoluteParenchymalVolume[1]) * 1000 )))) + '} % mm^3'
+		print '\\newcommand{\\parenchymalvolumeB}{' + str(int(round(np.mean(np.ma.masked_invalid(AbsoluteParenchymalVolume[1]) * 1000 )))) + '\\xspace} % mm^3'
 	elif '\\newcommand{\\parenchymalvolumeD}{' in line:
-		print '\\newcommand{\\parenchymalvolumeD}{' + str(int(round(np.mean(np.ma.masked_invalid(AbsoluteParenchymalVolume[3]) * 1000 )))) + '} % mm^3'
+		print '\\newcommand{\\parenchymalvolumeD}{' + str(int(round(np.mean(np.ma.masked_invalid(AbsoluteParenchymalVolume[3]) * 1000 )))) + '\\xspace} % mm^3'
 	elif '\\newcommand{\\parenchymalvolumeE}{' in line:
-		print '\\newcommand{\\parenchymalvolumeE}{' + str(int(round(np.mean(np.ma.masked_invalid(AbsoluteParenchymalVolume[4]) * 1000 )))) + '} % mm^3'
+		print '\\newcommand{\\parenchymalvolumeE}{' + str(int(round(np.mean(np.ma.masked_invalid(AbsoluteParenchymalVolume[4]) * 1000 )))) + '\\xspace} % mm^3'
 	elif '\\newcommand{\\meanparenchymalvolume}{' in line:
-		print '\\newcommand{\\meanparenchymalvolume}{' + str(int(round(np.mean(np.ma.masked_invalid(AbsoluteParenchymalVolume) * 1000 )))) + '} % mm^3'
+		print '\\newcommand{\\meanparenchymalvolume}{' + str(int(round(np.mean(np.ma.masked_invalid(AbsoluteParenchymalVolume) * 1000 )))) + '\\xspace} % mm^3'
 	elif '\\newcommand{\\meanparenchymalvolumeSTD}{' in line:
-		print '\\newcommand{\\meanparenchymalvolumeSTD}{' + str('%.3f' % (np.std(np.ma.masked_invalid(AbsoluteParenchymalVolume) * 1000 ))) + '}'
+		print '\\newcommand{\\meanparenchymalvolumeSTD}{' + str('%.3f' % (np.std(np.ma.masked_invalid(AbsoluteParenchymalVolume) * 1000 ))) + '\\xspace}'
 	else:
 		print line, # the ',' at the end prevents a newline
 
