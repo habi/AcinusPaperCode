@@ -71,7 +71,7 @@ for i in range(3):
             str(DisectorThickness[i][k]) + ' um):'
         print '    -', Counts[i][k], 'counts at'
         print '    -', PixelSize[i][k], 'um pixel size'
-        print '    - and thus a countig area of', CountingArea[i][k],\
+        print '    - and thus a counting area of', CountingArea[i][k],\
             'px or', int(round(CountingArea[i][k] * PixelSize[i][k] ** 2)),\
             'um^2'
 
@@ -80,23 +80,31 @@ print 80 * '_'
 AlveolarFraction = [[0 for i in range(3)] for k in range(3)]
 
 # Calculation from ReadVolumeSurfaceAndAlveaolarNumber.py, line 245ff
-print 'We can thus calculate the counts per volume (alveolar fracton) for',\
+print 'We can thus calculate the counts per volume (alveolar fraction) for',\
     'each acinus, which is:'
 for i in range(3):
     for k in range(3):
         AlveolarFraction[i][k] = Counts[i][k] / ((CountingArea[i][k] *
                                                   DisectorThickness[i][k]) *
                                                   2) * 1e12
-            
+
+Difference = [[0 for i in range(3)] for k in range(3)]
+
 for i in range(3):
     print 'For acinus', Acinus[i], 'we found a mean of',\
-        str(int(round(np.mean(np.mean(AlveolarFraction[i]))))),'counts/cm^3'
+        str(int(round(np.mean(np.mean(AlveolarFraction[i]))))), 'counts/cm^3'
     for k in range(3):
         print '  At a disector distance of', Disector[k],\
             'slices'
         print '    -', int(round(AlveolarFraction[i][k])), 'Counts/cm^3.'
-        print '    - This is the mean plus', \
-            round(((np.mean(AlveolarFraction[i]) - AlveolarFraction[i][k])
-                    / np.mean(AlveolarFraction[i]))*100,2), '%'
+        Difference[i][k] = ((np.mean(AlveolarFraction[i]) -\
+                             AlveolarFraction[i][k])
+                    / np.mean(AlveolarFraction[i])) * 100
+        if Difference[i][k] >= 0:
+            print '    - This is the mean plus', round(Difference[i][k], 2),\
+                '%'
+        else:
+            print '    - This is the mean minus',\
+                np.abs(round(Difference[i][k], 2)), '%'
 
 print 80 * '_'
